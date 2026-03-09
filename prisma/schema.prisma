@@ -1,0 +1,240 @@
+// Prisma schema for Kystløftet
+// En plattform for å løfte kystkommuner gjennom samarbeid, prosjekter og ressursdeling
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth (NextAuth.js v5) ────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Core domain ─────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  KOORDINATOR
+  BIDRAGSYTER
+  GJEST
+}
+
+enum ProsjektStatus {
+  PLANLAGT
+  AKTIV
+  PAUSERT
+  FULLFORT
+  AVLYST
+}
+
+enum ProsjektKategori {
+  INFRASTRUKTUR
+  NAERING
+  KULTUR
+  MILJOE
+  KOMPETANSE
+  FRILUFTSLIV
+  HAVBRUK
+  REISELIV
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  rolle         Role      @default(GJEST)
+  kommuneId     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts   Account[]
+  sessions   Session[]
+  kommune    Kommune?          @relation(fields: [kommuneId], references: [id])
+  prosjekter ProsjektMedlem[]
+  innlegg    Innlegg[]
+  kommentarer Kommentar[]
+}
+
+model Kommune {
+  id         String   @id @default(cuid())
+  navn       String
+  nummer     String   @unique // Kommunenummer (4 sifre)
+  fylke      String
+  befolkning Int?
+  areal      Float?   // km²
+  kystlinje  Float?   // km
+  logoUrl    String?
+  beskrivelse String? @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  brukere    User[]
+  prosjekter ProsjektKommune[]
+  ressurser  Ressurs[]
+}
+
+model Prosjekt {
+  id          String           @id @default(cuid())
+  tittel      String
+  slug        String           @unique
+  beskrivelse String           @db.Text
+  status      ProsjektStatus   @default(PLANLAGT)
+  kategori    ProsjektKategori
+  budsjett    Float?
+  startDato   DateTime?
+  sluttDato   DateTime?
+  bildUrl     String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  kommuner   ProsjektKommune[]
+  medlemmer  ProsjektMedlem[]
+  innlegg    Innlegg[]
+  milestones Milestone[]
+  tags       ProsjektTag[]
+}
+
+model ProsjektKommune {
+  prosjektId String
+  kommuneId  String
+  rolle      String? // f.eks. "Lederkommunen", "Samarbeidspartner"
+
+  prosjekt Prosjekt @relation(fields: [prosjektId], references: [id], onDelete: Cascade)
+  kommune  Kommune  @relation(fields: [kommuneId], references: [id], onDelete: Cascade)
+
+  @@id([prosjektId, kommuneId])
+}
+
+model ProsjektMedlem {
+  prosjektId String
+  userId     String
+  rolle      String? // f.eks. "Prosjektleder", "Bidragsyter"
+  joinedAt   DateTime @default(now())
+
+  prosjekt Prosjekt @relation(fields: [prosjektId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([prosjektId, userId])
+}
+
+model Milestone {
+  id          String    @id @default(cuid())
+  prosjektId  String
+  tittel      String
+  beskrivelse String?   @db.Text
+  forfallsDato DateTime?
+  fullfort    Boolean   @default(false)
+  fullfortDato DateTime?
+  createdAt   DateTime  @default(now())
+
+  prosjekt Prosjekt @relation(fields: [prosjektId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id   String @id @default(cuid())
+  navn String @unique
+
+  prosjekter ProsjektTag[]
+}
+
+model ProsjektTag {
+  prosjektId String
+  tagId      String
+
+  prosjekt Prosjekt @relation(fields: [prosjektId], references: [id], onDelete: Cascade)
+  tag      Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([prosjektId, tagId])
+}
+
+// ─── Kunnskapsdeling ─────────────────────────────────────────────────────────
+
+model Innlegg {
+  id         String    @id @default(cuid())
+  tittel     String
+  slug       String    @unique
+  innhold    String    @db.Text
+  publisert  Boolean   @default(false)
+  prosjektId String?
+  forfatterId String
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  prosjekt   Prosjekt?   @relation(fields: [prosjektId], references: [id])
+  forfatter  User        @relation(fields: [forfatterId], references: [id])
+  kommentarer Kommentar[]
+}
+
+model Kommentar {
+  id        String   @id @default(cuid())
+  innhold   String   @db.Text
+  innleggId String
+  forfatterId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  innlegg  Innlegg @relation(fields: [innleggId], references: [id], onDelete: Cascade)
+  forfatter User   @relation(fields: [forfatterId], references: [id])
+}
+
+// ─── Ressursbibliotek ─────────────────────────────────────────────────────────
+
+enum RessursType {
+  DOKUMENT
+  MAL
+  RAPPORT
+  VEILEDNING
+  LENKE
+}
+
+model Ressurs {
+  id          String      @id @default(cuid())
+  tittel      String
+  beskrivelse String?     @db.Text
+  type        RessursType
+  url         String
+  kommuneId   String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  kommune Kommune? @relation(fields: [kommuneId], references: [id])
+}
