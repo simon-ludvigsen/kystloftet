@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kystløftet</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      color: #1a2a3a;
+      background: #f5f0e8;
+    }
+
+    /* NAV */
+    .site-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      background: rgba(255,255,255,0.97);
+      backdrop-filter: blur(10px);
+      padding: 0.7rem 2rem;
+      box-shadow: 0 1px 12px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+    }
+
+    .site-logo {
+      display: flex;
+      align-items: center;
+      font-family: 'Barlow Condensed', 'Arial Black', Arial, sans-serif;
+      font-weight: 800;
+      font-size: 1.9rem;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      gap: 0;
+      text-transform: uppercase;
+    }
+
+    .logo-dark { color: #0d2b45; }
+    .logo-blue { color: #2e9bc5; }
+
+    .logo-waves {
+      height: 0.72em;
+      margin: 0 1px;
+      vertical-align: middle;
+      position: relative;
+      top: -0.04em;
+    }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      padding-top: calc(2rem + 56px);
+      background: linear-gradient(160deg, #0a3d62 0%, #1e6091 50%, #2e86ab 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 120px;
+      background: #f5f0e8;
+      clip-path: ellipse(55% 100% at 50% 100%);
+    }
+
+    .hero-badge {
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: #fff;
+      font-size: 0.85rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 0.4rem 1.2rem;
+      border-radius: 999px;
+      margin-bottom: 2rem;
+    }
+
+    .hero h1 {
+      font-size: clamp(3rem, 8vw, 6rem);
+      color: #fff;
+      font-weight: normal;
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero h1 span {
+      color: #7ecef4;
+    }
+
+    .hero p {
+      font-size: clamp(1rem, 2.5vw, 1.3rem);
+      color: rgba(255,255,255,0.8);
+      max-width: 580px;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+    }
+
+    .hero-cta {
+      display: inline-block;
+      background: #fff;
+      color: #0a3d62;
+      padding: 0.9rem 2.2rem;
+      border-radius: 999px;
+      text-decoration: none;
+      font-size: 1rem;
+      font-family: sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      transition: transform 0.2s, box-shadow 0.2s;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+
+    /* SECTION */
+    section {
+      padding: 5rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-label {
+      font-family: sans-serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #2e86ab;
+      margin-bottom: 1rem;
+    }
+
+    section h2 {
+      font-size: clamp(1.8rem, 4vw, 2.8rem);
+      font-weight: normal;
+      line-height: 1.2;
+      margin-bottom: 1.5rem;
+      color: #0a3d62;
+    }
+
+    section p {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: #3a4a5a;
+      max-width: 680px;
+    }
+
+    /* CARDS */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      margin-top: 3rem;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 2px 16px rgba(10,61,98,0.07);
+      border-top: 3px solid #2e86ab;
+    }
+
+    .card-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h3 {
+      font-size: 1.2rem;
+      font-weight: normal;
+      color: #0a3d62;
+      margin-bottom: 0.6rem;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: #5a6a7a;
+    }
+
+    /* VIBE-KODING */
+    .vibe-section {
+      background: #0a3d62;
+      color: #fff;
+      border-radius: 24px;
+      padding: 3rem;
+      margin: 0 2rem 4rem;
+      text-align: center;
+    }
+
+    .vibe-section h2 {
+      color: #7ecef4;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+      font-weight: normal;
+      margin-bottom: 1rem;
+    }
+
+    .vibe-section p {
+      color: rgba(255,255,255,0.75);
+      font-size: 1.05rem;
+      line-height: 1.7;
+      max-width: 600px;
+      margin: 0 auto 1.5rem;
+    }
+
+    .vibe-tag {
+      display: inline-block;
+      background: rgba(126,206,244,0.2);
+      border: 1px solid rgba(126,206,244,0.4);
+      color: #7ecef4;
+      padding: 0.3rem 0.9rem;
+      border-radius: 999px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      margin: 0.3rem;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 2rem;
+      font-family: sans-serif;
+      font-size: 0.85rem;
+      color: #8a9aaa;
+      border-top: 1px solid #ddd;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="site-nav">
+    <div class="site-logo">
+      <span class="logo-dark">KYST</span><span class="logo-blue">LØFT</span><svg class="logo-waves" viewBox="0 0 52 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M 2,13 C 10,6 18,6 26,13 C 34,20 42,20 50,13" stroke="#2e9bc5" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M 2,28 C 10,21 18,21 26,28 C 34,35 42,35 50,28" stroke="#2e9bc5" stroke-width="5.5" stroke-linecap="round"/>
+        <path d="M 2,43 C 10,36 18,36 26,43 C 34,50 42,50 50,43" stroke="#2e9bc5" stroke-width="5.5" stroke-linecap="round"/>
+      </svg><span class="logo-blue">T</span>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <header class="hero">
+    <div class="hero-badge">Norge · Kyst · Fremtid</div>
+    <h1>Kyst<span>løftet</span></h1>
+    <p>Et løft for norske kystsamfunn — bærekraftig utvikling, levende lokalsamfunn og styrket kystkultur.</p>
+    <a href="#om" class="hero-cta">Les mer</a>
+  </header>
+
+  <!-- OM -->
+  <section id="om">
+    <div class="section-label">Om oss</div>
+    <h2>Vi styrker kysten — sammen</h2>
+    <p>
+      Kystløftet er et initiativ for å sikre at norske kystsamfunn blomstrer også i fremtiden.
+      Vi jobber for bedre infrastruktur, levende havner, og sterkere fellesskap langs hele kysten.
+    </p>
+
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">⚓</div>
+        <h3>Levende havner</h3>
+        <p>Moderne og tilgjengelige havner som skaper aktivitet og arbeidsplasser i lokalsamfunnet.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌊</div>
+        <h3>Bærekraftig hav</h3>
+        <p>Ansvarlig bruk av havressursene for kommende generasjoner — rent hav, rik natur.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏘️</div>
+        <h3>Sterke lokalsamfunn</h3>
+        <p>Folk skal kunne bo og leve godt langs kysten. Vi kjemper for gode tjenester og tilbud.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- VIBE-KODING -->
+  <div class="vibe-section">
+    <h2>Laget med vibe-koding ✨</h2>
+    <p>
+      Denne siden ble laget på minutter ved hjelp av AI og vibe-koding —
+      der du beskriver hva du vil ha, og lar kunstig intelligens skrive koden for deg.
+    </p>
+    <div>
+      <span class="vibe-tag">Claude</span>
+      <span class="vibe-tag">ingen koderfarning nødvendig</span>
+      <span class="vibe-tag">lynrask utvikling</span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>© 2026 Kystløftet · Laget med vibe-koding og hjelp fra AI</p>
+  </footer>
+
+</body>
+</html>
