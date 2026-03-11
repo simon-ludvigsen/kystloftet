@@ -4,246 +4,259 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Kystløftet</title>
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@800&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --navy: #0d2b45;
+      --blue: #2e9bc5;
+      --light: #7ecef4;
+      --cream: #f4f1eb;
     }
+
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Georgia', serif;
-      color: #1a2a3a;
-      background: #f5f0e8;
+      font-family: 'Inter', sans-serif;
+      color: var(--navy);
+      background: #0a1628;
+      overflow-x: hidden;
     }
 
-    /* NAV */
+    /* ── NAV ── */
     .site-nav {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 100;
-      background: rgba(255,255,255,0.97);
-      backdrop-filter: blur(10px);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      background: rgba(255,255,255,0.96);
+      backdrop-filter: blur(12px);
       padding: 0.7rem 2rem;
-      box-shadow: 0 1px 12px rgba(0,0,0,0.08);
-      display: flex;
-      align-items: center;
+      box-shadow: 0 1px 12px rgba(0,0,0,0.1);
+      display: flex; align-items: center; justify-content: space-between;
     }
-
     .site-logo {
-      display: flex;
-      align-items: center;
-      font-family: 'Barlow Condensed', 'Arial Black', Arial, sans-serif;
-      font-weight: 800;
-      font-size: 1.9rem;
-      letter-spacing: 0.06em;
-      line-height: 1;
-      gap: 0;
-      text-transform: uppercase;
+      display: flex; align-items: center;
+      font-family: 'Barlow Condensed', 'Arial Black', sans-serif;
+      font-weight: 800; font-size: 1.9rem;
+      letter-spacing: 0.06em; text-transform: uppercase; line-height: 1;
     }
-
     .logo-dark { color: #0d2b45; }
     .logo-blue { color: #2e9bc5; }
+    .logo-waves { height: 0.72em; margin: 0 1px; vertical-align: middle; position: relative; top: -0.04em; }
 
-    .logo-waves {
-      height: 0.72em;
-      margin: 0 1px;
-      vertical-align: middle;
-      position: relative;
-      top: -0.04em;
+    .nav-links { display: flex; gap: 2rem; list-style: none; }
+    .nav-links a {
+      font-size: 0.9rem; font-weight: 600; color: var(--navy);
+      text-decoration: none; letter-spacing: 0.03em;
+      opacity: 0.7; transition: opacity 0.2s;
     }
+    .nav-links a:hover { opacity: 1; }
 
-    /* HERO */
+    /* ── HERO ── */
     .hero {
-      min-height: 100vh;
-      padding-top: calc(2rem + 56px);
-      background: linear-gradient(160deg, #0a3d62 0%, #1e6091 50%, #2e86ab 100%);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      text-align: center;
-      padding: 2rem;
-      position: relative;
-      overflow: hidden;
+      position: relative; min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center;
+      text-align: center; overflow: hidden;
     }
 
-    .hero::before {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 120px;
-      background: #f5f0e8;
-      clip-path: ellipse(55% 100% at 50% 100%);
+    #wave-canvas {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      cursor: crosshair;
+    }
+
+    .hero-content {
+      position: relative; z-index: 10;
+      padding: 6rem 2rem 2rem;
+      display: flex; flex-direction: column; align-items: center;
     }
 
     .hero-badge {
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.3);
-      color: #fff;
-      font-size: 0.85rem;
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
-      padding: 0.4rem 1.2rem;
-      border-radius: 999px;
+      display: inline-block;
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.25);
+      color: rgba(255,255,255,0.9);
+      font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase;
+      padding: 0.4rem 1.3rem; border-radius: 999px;
       margin-bottom: 2rem;
     }
 
     .hero h1 {
-      font-size: clamp(3rem, 8vw, 6rem);
-      color: #fff;
-      font-weight: normal;
-      letter-spacing: -0.02em;
-      line-height: 1.05;
-      margin-bottom: 1.5rem;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: clamp(4rem, 10vw, 8rem);
+      color: #fff; letter-spacing: 0.04em; text-transform: uppercase;
+      line-height: 0.95; margin-bottom: 1.5rem;
+      text-shadow: 0 4px 40px rgba(0,0,0,0.4);
     }
-
-    .hero h1 span {
-      color: #7ecef4;
-    }
+    .hero h1 em { font-style: normal; color: var(--light); }
 
     .hero p {
-      font-size: clamp(1rem, 2.5vw, 1.3rem);
-      color: rgba(255,255,255,0.8);
-      max-width: 580px;
-      line-height: 1.7;
-      margin-bottom: 2.5rem;
+      font-size: clamp(1rem, 2.2vw, 1.25rem);
+      color: rgba(255,255,255,0.75); max-width: 560px;
+      line-height: 1.7; margin-bottom: 3rem; font-weight: 300;
     }
 
-    .hero-cta {
-      display: inline-block;
-      background: #fff;
-      color: #0a3d62;
-      padding: 0.9rem 2.2rem;
-      border-radius: 999px;
-      text-decoration: none;
-      font-size: 1rem;
-      font-family: sans-serif;
-      font-weight: 600;
-      letter-spacing: 0.02em;
-      transition: transform 0.2s, box-shadow 0.2s;
-      position: relative;
-      z-index: 1;
+    .hero-cta-group { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; }
+
+    .btn-primary {
+      background: #fff; color: var(--navy);
+      padding: 0.9rem 2.4rem; border-radius: 999px;
+      text-decoration: none; font-weight: 700; font-size: 0.95rem;
+      letter-spacing: 0.02em; transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+
+    .btn-ghost {
+      background: transparent; color: #fff;
+      padding: 0.9rem 2.4rem; border-radius: 999px;
+      text-decoration: none; font-weight: 600; font-size: 0.95rem;
+      letter-spacing: 0.02em; border: 1.5px solid rgba(255,255,255,0.5);
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.8); }
+
+    .scroll-hint {
+      position: absolute; bottom: 2.5rem; left: 50%; transform: translateX(-50%);
+      z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
+      color: rgba(255,255,255,0.4); font-size: 0.72rem; letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+    .scroll-hint-line {
+      width: 1px; height: 50px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.4), transparent);
+      animation: scrollPulse 2s ease-in-out infinite;
+    }
+    @keyframes scrollPulse {
+      0%, 100% { opacity: 0.4; transform: scaleY(1); }
+      50% { opacity: 1; transform: scaleY(1.2); }
     }
 
-    .hero-cta:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    /* ── STATS ── */
+    .stats-bar {
+      background: var(--cream);
+      padding: 3.5rem 2rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 2rem; text-align: center;
+    }
+    .stat-item { padding: 0.5rem; }
+    .stat-number {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: clamp(2.8rem, 5vw, 4rem);
+      color: var(--navy); letter-spacing: -0.02em; line-height: 1;
+      display: block;
+    }
+    .stat-suffix { color: var(--blue); }
+    .stat-label {
+      font-size: 0.8rem; color: #6a7a8a;
+      text-transform: uppercase; letter-spacing: 0.12em;
+      margin-top: 0.4rem; display: block;
     }
 
-    /* SECTION */
-    section {
-      padding: 5rem 2rem;
-      max-width: 900px;
-      margin: 0 auto;
-    }
+    /* ── SECTIONS ── */
+    .section { padding: 6rem 2rem; max-width: 1100px; margin: 0 auto; }
 
     .section-label {
-      font-family: sans-serif;
-      font-size: 0.75rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: #2e86ab;
-      margin-bottom: 1rem;
+      font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--blue); margin-bottom: 1rem; font-weight: 600;
     }
-
-    section h2 {
-      font-size: clamp(1.8rem, 4vw, 2.8rem);
-      font-weight: normal;
-      line-height: 1.2;
-      margin-bottom: 1.5rem;
-      color: #0a3d62;
+    .section h2 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: clamp(2rem, 4.5vw, 3.2rem);
+      color: var(--navy); letter-spacing: 0.03em;
+      text-transform: uppercase; line-height: 1.1; margin-bottom: 1.5rem;
     }
+    .section p { font-size: 1.05rem; line-height: 1.8; color: #4a5a6a; max-width: 640px; }
 
-    section p {
-      font-size: 1.1rem;
-      line-height: 1.8;
-      color: #3a4a5a;
-      max-width: 680px;
-    }
-
-    /* CARDS */
+    /* ── CARDS ── */
     .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 1.5rem;
-      margin-top: 3rem;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem; margin-top: 3.5rem;
     }
-
     .card {
-      background: #fff;
-      border-radius: 16px;
-      padding: 2rem;
-      box-shadow: 0 2px 16px rgba(10,61,98,0.07);
-      border-top: 3px solid #2e86ab;
+      background: #fff; border-radius: 20px; padding: 2.2rem;
+      box-shadow: 0 4px 24px rgba(10,61,98,0.07);
+      border-top: 3px solid var(--blue);
+      transition: transform 0.3s, box-shadow 0.3s;
+      opacity: 0; transform: translateY(30px);
     }
-
-    .card-icon {
-      font-size: 2rem;
-      margin-bottom: 1rem;
+    .card.revealed {
+      opacity: 1; transform: translateY(0);
+      transition: opacity 0.6s ease, transform 0.6s ease;
     }
-
+    .card:hover { transform: translateY(-5px); box-shadow: 0 12px 36px rgba(10,61,98,0.13); }
+    .card-icon { font-size: 2.4rem; margin-bottom: 1.2rem; }
     .card h3 {
-      font-size: 1.2rem;
-      font-weight: normal;
-      color: #0a3d62;
-      margin-bottom: 0.6rem;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 1.35rem; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--navy); margin-bottom: 0.7rem;
     }
+    .card p { font-size: 0.95rem; line-height: 1.65; color: #5a6a7a; }
 
-    .card p {
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: #5a6a7a;
-    }
-
-    /* VIBE-KODING */
+    /* ── VIBE SECTION ── */
     .vibe-section {
-      background: #0a3d62;
-      color: #fff;
-      border-radius: 24px;
-      padding: 3rem;
-      margin: 0 2rem 4rem;
-      text-align: center;
+      background: linear-gradient(135deg, #020f1e 0%, #051f38 50%, #0a3d62 100%);
+      border-radius: 28px; padding: 4rem 2rem;
+      text-align: center; margin: 0 1.5rem 4rem;
+      position: relative; overflow: hidden;
     }
-
+    .vibe-section::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 50% 110%, rgba(46,155,197,0.25) 0%, transparent 70%);
+    }
+    .vibe-inner { position: relative; z-index: 1; }
     .vibe-section h2 {
-      color: #7ecef4;
-      font-size: clamp(1.5rem, 3vw, 2.2rem);
-      font-weight: normal;
-      margin-bottom: 1rem;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: clamp(1.8rem, 4vw, 2.8rem); letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--light); margin-bottom: 1rem;
     }
-
     .vibe-section p {
-      color: rgba(255,255,255,0.75);
-      font-size: 1.05rem;
-      line-height: 1.7;
-      max-width: 600px;
-      margin: 0 auto 1.5rem;
+      color: rgba(255,255,255,0.7); font-size: 1.05rem; line-height: 1.7;
+      max-width: 600px; margin: 0 auto 2rem;
+    }
+    .tags { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+    .tag {
+      background: rgba(126,206,244,0.15); border: 1px solid rgba(126,206,244,0.3);
+      color: var(--light); padding: 0.35rem 1rem; border-radius: 999px;
+      font-family: monospace; font-size: 0.88rem;
     }
 
-    .vibe-tag {
-      display: inline-block;
-      background: rgba(126,206,244,0.2);
-      border: 1px solid rgba(126,206,244,0.4);
-      color: #7ecef4;
-      padding: 0.3rem 0.9rem;
-      border-radius: 999px;
-      font-family: monospace;
-      font-size: 0.9rem;
-      margin: 0.3rem;
+    /* ── VIBE METER ── */
+    .vibe-meter { margin: 2.5rem auto 0; max-width: 500px; }
+    .meter-label {
+      display: flex; justify-content: space-between;
+      color: rgba(255,255,255,0.5); font-size: 0.78rem;
+      letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 0.6rem;
+    }
+    .meter-track {
+      background: rgba(255,255,255,0.08); border-radius: 999px; height: 8px; overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--blue), var(--light));
+      width: 0%; transition: width 1.8s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    /* FOOTER */
+    /* ── FOOTER ── */
     footer {
-      text-align: center;
-      padding: 2rem;
-      font-family: sans-serif;
-      font-size: 0.85rem;
-      color: #8a9aaa;
-      border-top: 1px solid #ddd;
+      text-align: center; padding: 2.5rem 2rem;
+      background: #020d18; color: rgba(255,255,255,0.3);
+      font-size: 0.85rem; letter-spacing: 0.05em;
+    }
+    footer strong { color: rgba(255,255,255,0.6); }
+
+    /* ── REVEAL ── */
+    .reveal {
+      opacity: 0; transform: translateY(24px);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 600px) {
+      .nav-links { display: none; }
+      .hero h1 { font-size: 3.2rem; }
+      .vibe-section { margin: 0 0.75rem 3rem; border-radius: 20px; }
     }
   </style>
 </head>
@@ -258,62 +271,373 @@
         <path d="M 2,43 C 10,36 18,36 26,43 C 34,50 42,50 50,43" stroke="#2e9bc5" stroke-width="5.5" stroke-linecap="round"/>
       </svg><span class="logo-blue">T</span>
     </div>
+    <ul class="nav-links">
+      <li><a href="#om">Om oss</a></li>
+      <li><a href="#satsinger">Satsinger</a></li>
+      <li><a href="#vibecode">Vibe-koding</a></li>
+    </ul>
   </nav>
 
   <!-- HERO -->
   <header class="hero">
-    <div class="hero-badge">Norge · Kyst · Fremtid</div>
-    <h1>Kyst<span>løftet</span></h1>
-    <p>Et løft for norske kystsamfunn — bærekraftig utvikling, levende lokalsamfunn og styrket kystkultur.</p>
-    <a href="#om" class="hero-cta">Les mer</a>
+    <canvas id="wave-canvas"></canvas>
+    <div class="hero-content">
+      <div class="hero-badge">Norge · Kyst · Fremtid</div>
+      <h1>Kyst<em>løftet</em></h1>
+      <p>Et løft for norske kystsamfunn — bærekraftig utvikling, levende lokalsamfunn og styrket kystkultur langs hele kysten.</p>
+      <div class="hero-cta-group">
+        <a href="#om" class="btn-primary">Utforsk initiativet</a>
+        <a href="#vibecode" class="btn-ghost">Hvordan ble dette laget?</a>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-hint-line"></div>
+    </div>
   </header>
 
-  <!-- OM -->
-  <section id="om">
-    <div class="section-label">Om oss</div>
-    <h2>Vi styrker kysten — sammen</h2>
-    <p>
-      Kystløftet er et initiativ for å sikre at norske kystsamfunn blomstrer også i fremtiden.
-      Vi jobber for bedre infrastruktur, levende havner, og sterkere fellesskap langs hele kysten.
-    </p>
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-number" data-target="83281" data-suffix=" km">0</span>
+      <span class="stat-label">Kystlinje</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" data-target="278" data-suffix="+">0</span>
+      <span class="stat-label">Kystkommuner</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" data-target="900000" data-suffix="+">0</span>
+      <span class="stat-label">Kystinnbyggere</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-number" data-target="47" data-suffix=" mrd">0</span>
+      <span class="stat-label">Investeringsbehov</span>
+    </div>
+  </div>
 
-    <div class="cards">
+  <!-- OM -->
+  <section id="om" class="section">
+    <div class="section-label reveal">Om initiativet</div>
+    <h2 class="reveal">Vi styrker kysten<br>— sammen</h2>
+    <p class="reveal">Kystløftet er et nasjonalt initiativ for å sikre at norske kystsamfunn blomstrer også i fremtiden. Vi jobber for bedre infrastruktur, levende havner og sterkere fellesskap langs hele kysten.</p>
+
+    <div class="cards" id="satsinger">
       <div class="card">
         <div class="card-icon">⚓</div>
         <h3>Levende havner</h3>
-        <p>Moderne og tilgjengelige havner som skaper aktivitet og arbeidsplasser i lokalsamfunnet.</p>
+        <p>Moderne og tilgjengelige havner som skaper aktivitet og arbeidsplasser. Havnen som møteplass — for næring og folk.</p>
       </div>
       <div class="card">
         <div class="card-icon">🌊</div>
         <h3>Bærekraftig hav</h3>
-        <p>Ansvarlig bruk av havressursene for kommende generasjoner — rent hav, rik natur.</p>
+        <p>Ansvarlig bruk av havressursene for kommende generasjoner. Rent hav, rik natur og en kystnæring vi kan være stolte av.</p>
       </div>
       <div class="card">
         <div class="card-icon">🏘️</div>
         <h3>Sterke lokalsamfunn</h3>
-        <p>Folk skal kunne bo og leve godt langs kysten. Vi kjemper for gode tjenester og tilbud.</p>
+        <p>Folk skal kunne bo og leve godt langs kysten. Vi kjemper for gode tjenester, digital infrastruktur og levende bygder.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🚢</div>
+        <h3>Grønn skipsfart</h3>
+        <p>Nullutslippsferger og -hurtigbåter langs kysten. Norge skal gå foran i det grønne skiftet på havet.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🎣</div>
+        <h3>Kystfiskeriet</h3>
+        <p>Levende kystfiske med plass til både store og små. Vi sikrer råderett over de lokale fiskeressursene.</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🌿</div>
+        <h3>Naturvern</h3>
+        <p>Kystnaturen er vår felles arv. Vi balanserer vern og bruk slik at fjordene og øyene forblir levende og vakre.</p>
       </div>
     </div>
   </section>
 
   <!-- VIBE-KODING -->
-  <div class="vibe-section">
-    <h2>Laget med vibe-koding ✨</h2>
-    <p>
-      Denne siden ble laget på minutter ved hjelp av AI og vibe-koding —
-      der du beskriver hva du vil ha, og lar kunstig intelligens skrive koden for deg.
-    </p>
-    <div>
-      <span class="vibe-tag">Claude</span>
-      <span class="vibe-tag">ingen koderfarning nødvendig</span>
-      <span class="vibe-tag">lynrask utvikling</span>
+  <div id="vibecode" class="vibe-section">
+    <div class="vibe-inner">
+      <h2>Laget med vibe-koding ✦</h2>
+      <p>
+        Animerte havbølger, interaktiv canvas, bioluminescerende partikler, scroll-animasjoner
+        og talltellere — alt laget på minutter med AI. Ingen koderfarning nødvendig.
+      </p>
+      <div class="tags">
+        <span class="tag">canvas API</span>
+        <span class="tag">IntersectionObserver</span>
+        <span class="tag">requestAnimationFrame</span>
+        <span class="tag">CSS scroll-reveal</span>
+        <span class="tag">SVG-logo</span>
+        <span class="tag">responsive design</span>
+        <span class="tag">null kodeerfaring</span>
+      </div>
+      <div class="vibe-meter" id="vibe-meter">
+        <div class="meter-label"><span>Vibe-nivå</span><span id="vibe-pct">0%</span></div>
+        <div class="meter-track"><div class="meter-fill" id="meter-fill"></div></div>
+      </div>
     </div>
   </div>
 
   <!-- FOOTER -->
   <footer>
-    <p>© 2026 Kystløftet · Laget med vibe-koding og hjelp fra AI</p>
+    <p>© 2026 <strong>Kystløftet</strong> · Laget med vibe-koding og <strong>Claude</strong></p>
   </footer>
 
+  <script>
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       CANVAS OCEAN
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    const canvas = document.getElementById('wave-canvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, mouse = { x: -9999 }, ripples = [], stars = [], particles = [];
+
+    function resize() {
+      W = canvas.width = canvas.offsetWidth;
+      H = canvas.height = canvas.offsetHeight;
+      initStars();
+    }
+
+    function initStars() {
+      stars = Array.from({ length: 140 }, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H * 0.55,
+        r: Math.random() * 1.4 + 0.2,
+        a: Math.random(),
+        speed: Math.random() * 0.006 + 0.002,
+        phase: Math.random() * Math.PI * 2,
+      }));
+    }
+
+    function drawStars(t) {
+      stars.forEach(s => {
+        const alpha = s.a * (0.5 + 0.5 * Math.sin(t * s.speed + s.phase));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(200,230,255,${alpha})`;
+        ctx.fill();
+      });
+    }
+
+    const waves = [
+      { amp: 70, freq: 0.0040, speed: 0.0020, y: 0.68, color: 'rgba(5,28,60,1)',       phase: 0   },
+      { amp: 55, freq: 0.0055, speed: 0.0035, y: 0.72, color: 'rgba(8,42,80,1)',        phase: 1.2 },
+      { amp: 42, freq: 0.0070, speed: 0.0055, y: 0.76, color: 'rgba(12,58,100,1)',      phase: 2.4 },
+      { amp: 30, freq: 0.0090, speed: 0.0080, y: 0.80, color: 'rgba(18,80,130,0.95)',   phase: 0.8 },
+      { amp: 20, freq: 0.0120, speed: 0.0120, y: 0.83, color: 'rgba(25,100,158,0.9)',   phase: 1.6 },
+      { amp: 14, freq: 0.0160, speed: 0.0160, y: 0.86, color: 'rgba(35,120,175,0.85)',  phase: 3.1 },
+      { amp:  9, freq: 0.0220, speed: 0.0220, y: 0.89, color: 'rgba(46,134,171,0.8)',   phase: 0.3 },
+      { amp:  6, freq: 0.0300, speed: 0.0300, y: 0.91, color: 'rgba(46,155,197,0.6)',   phase: 2.0 },
+    ];
+
+    function getWaveY(wave, x, t, mx) {
+      let y = wave.y * H + Math.sin(x * wave.freq + wave.phase + t * wave.speed * 60) * wave.amp;
+      const dx = x - mx;
+      const influence = Math.exp(-dx * dx / (W * W * 0.015));
+      y += Math.sin(t * 0.08 + dx * 0.01) * 18 * influence;
+      return y;
+    }
+
+    function drawWave(wave, t, mx) {
+      ctx.beginPath();
+      ctx.moveTo(0, H);
+      for (let x = 0; x <= W; x += 3) {
+        ctx.lineTo(x, getWaveY(wave, x, t, mx));
+      }
+      ctx.lineTo(W, H);
+      ctx.closePath();
+      ctx.fillStyle = wave.color;
+      ctx.fill();
+    }
+
+    canvas.addEventListener('click', e => {
+      const r = canvas.getBoundingClientRect();
+      ripples.push({ x: e.clientX - r.left, y: e.clientY - r.top, r: 0, a: 1 });
+    });
+    canvas.addEventListener('mousemove', e => {
+      const r = canvas.getBoundingClientRect();
+      mouse.x = e.clientX - r.left;
+    });
+    canvas.addEventListener('mouseleave', () => { mouse.x = -9999; });
+
+    function drawRipples() {
+      ripples = ripples.filter(rip => rip.a > 0.01);
+      ripples.forEach(rip => {
+        for (let i = 1; i <= 3; i++) {
+          ctx.beginPath();
+          ctx.arc(rip.x, rip.y, rip.r * i * 0.5, 0, Math.PI * 2);
+          ctx.strokeStyle = `rgba(126,206,244,${rip.a / i})`;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+        rip.r += 3.5;
+        rip.a *= 0.94;
+      });
+    }
+
+    function spawnParticle() {
+      particles.push({
+        x: Math.random() * W,
+        y: H * (0.7 + Math.random() * 0.3),
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: -(Math.random() * 0.5 + 0.2),
+        r: Math.random() * 2.5 + 0.8,
+        a: Math.random() * 0.7 + 0.3,
+        life: 1,
+      });
+    }
+
+    function drawParticles() {
+      particles = particles.filter(p => p.life > 0.02);
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = 'rgba(46,155,197,0.8)';
+        ctx.fillStyle = `rgba(126,206,244,${p.a * p.life})`;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        p.x += p.vx; p.y += p.vy; p.life -= 0.008;
+      });
+    }
+
+    function drawSky() {
+      const g = ctx.createLinearGradient(0, 0, 0, H * 0.85);
+      g.addColorStop(0,    '#010b15');
+      g.addColorStop(0.35, '#020f1e');
+      g.addColorStop(0.65, '#051928');
+      g.addColorStop(1,    '#082440');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    function drawMoon() {
+      const mx = W * 0.82, my = H * 0.18, mr = W < 600 ? 28 : 42;
+      // glow
+      const glow = ctx.createRadialGradient(mx, my, 0, mx, my, mr * 2.5);
+      glow.addColorStop(0, 'rgba(200,230,255,0.12)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, W, H);
+      // disc
+      ctx.beginPath();
+      ctx.arc(mx, my, mr, 0, Math.PI * 2);
+      const mg = ctx.createRadialGradient(mx - mr * 0.25, my - mr * 0.25, mr * 0.1, mx, my, mr);
+      mg.addColorStop(0, 'rgba(235,245,255,0.95)');
+      mg.addColorStop(1, 'rgba(190,220,255,0.7)');
+      ctx.fillStyle = mg;
+      ctx.fill();
+    }
+
+    function drawMoonReflection(t) {
+      const mx = W * 0.82;
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      for (let x = mx - 55; x < mx + 55; x += 8) {
+        const flicker = 0.5 + 0.5 * Math.sin(t * 0.04 + x * 0.12);
+        ctx.beginPath();
+        ctx.moveTo(x + Math.sin(t * 0.02 + x) * 3, H * 0.72);
+        ctx.lineTo(x + Math.sin(t * 0.03 + x) * 6, H);
+        ctx.strokeStyle = `rgba(200,235,255,${0.05 * flicker})`;
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    let t = 0;
+    function animate() {
+      t++;
+      ctx.clearRect(0, 0, W, H);
+      drawSky();
+      drawStars(t);
+      drawMoon();
+      drawMoonReflection(t);
+      waves.forEach(w => drawWave(w, t, mouse.x));
+      drawRipples();
+      if (t % 4 === 0 && particles.length < 80) spawnParticle();
+      drawParticles();
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    animate();
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       SCROLL REVEALS
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    const revealObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); }
+      });
+    }, { threshold: 0.15 });
+    document.querySelectorAll('.reveal').forEach(el => revealObs.observe(el));
+
+    const cardObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll('.card').forEach((c, i) =>
+            setTimeout(() => c.classList.add('revealed'), i * 110));
+          cardObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.1 });
+    const cardGrid = document.querySelector('.cards');
+    if (cardGrid) cardObs.observe(cardGrid);
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       ANIMATED COUNTERS
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    function animateCounter(el) {
+      const target = +el.dataset.target;
+      const suffix = el.dataset.suffix || '';
+      const start = performance.now();
+      (function update(now) {
+        const p = Math.min((now - start) / 1800, 1);
+        const eased = 1 - Math.pow(1 - p, 3);
+        const val = Math.round(eased * target);
+        el.innerHTML = val.toLocaleString('no-NO') + (p < 1 ? suffix : `<span class="stat-suffix">${suffix}</span>`);
+        if (p < 1) requestAnimationFrame(update);
+      })(start);
+    }
+
+    const statObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.querySelectorAll('[data-target]').forEach(animateCounter);
+          statObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.4 });
+    const statsBar = document.querySelector('.stats-bar');
+    if (statsBar) statObs.observe(statsBar);
+
+    /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+       VIBE METER
+    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+    const vibeObs = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          const fill = document.getElementById('meter-fill');
+          const pct  = document.getElementById('vibe-pct');
+          const target = 94;
+          setTimeout(() => {
+            fill.style.width = target + '%';
+            let v = 0;
+            const iv = setInterval(() => {
+              v = Math.min(v + 2, target);
+              pct.textContent = v + '%';
+              if (v >= target) clearInterval(iv);
+            }, 36);
+          }, 400);
+          vibeObs.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.6 });
+    const vm = document.getElementById('vibe-meter');
+    if (vm) vibeObs.observe(vm);
+  </script>
 </body>
 </html>
