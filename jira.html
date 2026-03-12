@@ -231,6 +231,49 @@
     #board-view::-webkit-scrollbar-thumb { background: #c0cdd8; border-radius: 3px; }
     #list-view::-webkit-scrollbar { width: 6px; }
     #list-view::-webkit-scrollbar-thumb { background: #c0cdd8; border-radius: 3px; }
+
+    /* ── MOBILE ─────────────────────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      /* Topbar: hide project badge, compress buttons */
+      .topbar { padding: 0 0.9rem; height: 48px; }
+      .project-badge { display: none; }
+      .topbar-btn { padding: 0.3rem 0.7rem; font-size: 0.75rem; }
+      .brand { font-size: 1.15rem; }
+
+      /* Sprint bar: stack vertically */
+      .sprint-bar { flex-direction: column; align-items: flex-start; gap: 0.3rem; padding: 0.5rem 0.9rem; }
+      .sprint-progress { max-width: 100%; width: 100%; }
+
+      /* Toolbar: compact, full-width inputs */
+      .toolbar { padding: 0.5rem 0.9rem; gap: 0.4rem; }
+      .search-box { width: 100%; }
+      .toolbar-group { width: 100%; }
+      .toolbar-group .view-btn { flex: 1; text-align: center; }
+      select.filter-sel { flex: 1; min-width: 0; }
+
+      /* Board: horizontal scroll, slightly narrower cards */
+      #board-view { padding: 0.7rem 0.9rem; gap: 0; }
+      .board-col { flex: 0 0 240px; margin-right: 0.7rem; }
+
+      /* List: hide less-important columns */
+      .list-table th:nth-child(2),
+      .list-table td:nth-child(2),
+      .list-table th:nth-child(6),
+      .list-table td:nth-child(6),
+      .list-table th:nth-child(7),
+      .list-table td:nth-child(7) { display: none; }
+      .list-table th, .list-table td { padding: 0.55rem 0.6rem; }
+      #list-view { padding: 0.7rem 0.9rem; }
+
+      /* Modal: full-screen on mobile */
+      .overlay { align-items: flex-end; }
+      .modal {
+        width: 100%; max-width: 100%; border-radius: 16px 16px 0 0;
+        max-height: 92vh;
+      }
+      .form-row { flex-direction: column; gap: 0.7rem; }
+      .form-group[style*="max-width:90px"] { max-width: 100% !important; }
+    }
   </style>
 </head>
 <body>
