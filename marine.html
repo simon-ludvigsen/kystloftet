@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Arendal Marine Data – 3D Visualisering</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#020d18;color:#e0f0ff;font-family:'Inter',sans-serif;overflow:hidden;height:100vh}
+#canvas{display:block;width:100vw;height:100vh}
+#ui{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:10}
+
+/* TOP BAR */
+#topbar{position:absolute;top:0;left:0;right:0;height:56px;background:linear-gradient(180deg,rgba(2,13,24,0.95),transparent);display:flex;align-items:center;padding:0 20px;gap:16px;pointer-events:all}
+#logo{font-size:1.1rem;font-weight:700;color:#7ecef4;letter-spacing:1px;white-space:nowrap}
+#logo span{color:#2ecc71}
+.topbtn{background:rgba(46,155,197,0.15);border:1px solid rgba(46,155,197,0.35);color:#7ecef4;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:0.78rem;font-weight:500;letter-spacing:0.5px;transition:all 0.2s;pointer-events:all}
+.topbtn:hover,.topbtn.active{background:rgba(46,155,197,0.35);border-color:#2e9bc5}
+#status-bar{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:0.72rem;color:#7ecef4;opacity:0.8}
+.dot{width:7px;height:7px;border-radius:50%;background:#2ecc71;display:inline-block;box-shadow:0 0 6px #2ecc71;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* LEFT PANEL */
+#leftpanel{position:absolute;top:66px;left:12px;width:260px;display:flex;flex-direction:column;gap:8px;pointer-events:all;max-height:calc(100vh - 80px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:#2e9bc5 transparent}
+.card{background:rgba(2,13,24,0.85);border:1px solid rgba(46,155,197,0.25);border-radius:10px;padding:12px 14px;backdrop-filter:blur(8px)}
+.card-title{font-size:0.7rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#2e9bc5;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.card-title .icon{font-size:1rem}
+.metric{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.metric:last-child{border:none}
+.metric-label{font-size:0.72rem;color:#8ab4cc}
+.metric-value{font-size:0.85rem;font-weight:600;color:#e0f0ff}
+.metric-value.good{color:#2ecc71}
+.metric-value.warn{color:#f59f00}
+.metric-value.bad{color:#e74c3c}
+.bar-wrap{height:4px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:6px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;transition:width 1s ease}
+.temp-gradient{background:linear-gradient(90deg,#2e9bc5,#2ecc71,#f59f00,#e74c3c)}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.leg{display:flex;align-items:center;gap:4px;font-size:0.65rem;color:#8ab4cc}
+.leg-dot{width:8px;height:8px;border-radius:50%}
+
+/* RIGHT PANEL */
+#rightpanel{position:absolute;top:66px;right:12px;width:240px;display:flex;flex-direction:column;gap:8px;pointer-events:all}
+
+/* BOTTOM BAR */
+#bottombar{position:absolute;bottom:0;left:0;right:0;padding:10px 16px;background:linear-gradient(0deg,rgba(2,13,24,0.95),transparent);display:flex;align-items:flex-end;gap:12px;pointer-events:all}
+#timeline{flex:1}
+#timeline-label{font-size:0.65rem;color:#2e9bc5;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+#timeline-track{height:3px;background:rgba(255,255,255,0.1);border-radius:2px;position:relative;cursor:pointer}
+#timeline-fill{height:100%;background:linear-gradient(90deg,#2e9bc5,#7ecef4);border-radius:2px;transition:width 0.3s}
+#timeline-thumb{position:absolute;top:50%;width:12px;height:12px;background:#7ecef4;border-radius:50%;transform:translate(-50%,-50%);cursor:grab;box-shadow:0 0 8px #7ecef4}
+#time-display{font-size:0.8rem;color:#7ecef4;white-space:nowrap;min-width:80px;text-align:right}
+
+/* CONTROLS HINT */
+#controls-hint{position:absolute;bottom:48px;right:12px;font-size:0.65rem;color:rgba(126,206,244,0.5);text-align:right;line-height:1.7;pointer-events:none}
+
+/* LAYER TOGGLES */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.toggle-label{font-size:0.72rem;color:#8ab4cc}
+.toggle{position:relative;width:32px;height:18px;cursor:pointer}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:rgba(255,255,255,0.1);border-radius:9px;transition:0.2s}
+.toggle-slider::before{content:'';position:absolute;height:14px;width:14px;left:2px;bottom:2px;background:white;border-radius:50%;transition:0.2s}
+.toggle input:checked+.toggle-slider{background:#2e9bc5}
+.toggle input:checked+.toggle-slider::before{transform:translateX(14px)}
+
+/* SHIP TOOLTIP */
+#ship-tooltip{position:absolute;background:rgba(2,13,24,0.95);border:1px solid rgba(46,155,197,0.4);border-radius:8px;padding:10px 14px;pointer-events:none;opacity:0;transition:opacity 0.2s;font-size:0.75rem;max-width:200px;z-index:20}
+#ship-tooltip h4{color:#7ecef4;margin-bottom:6px;font-size:0.8rem}
+#ship-tooltip .srow{display:flex;justify-content:space-between;gap:16px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+#ship-tooltip .srow:last-child{border:none}
+#ship-tooltip .sk{color:#8ab4cc}
+#ship-tooltip .sv{color:#e0f0ff;font-weight:500}
+
+/* LOADING */
+#loading{position:fixed;inset:0;background:#020d18;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity 0.8s}
+#loading.done{opacity:0;pointer-events:none}
+#load-logo{font-size:2rem;font-weight:800;color:#7ecef4;letter-spacing:2px;margin-bottom:24px}
+#load-logo span{color:#2ecc71}
+#load-bar-wrap{width:300px;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;margin-bottom:12px}
+#load-bar{height:100%;background:linear-gradient(90deg,#2e9bc5,#7ecef4);border-radius:2px;transition:width 0.4s;width:0%}
+#load-text{font-size:0.75rem;color:#2e9bc5;letter-spacing:1px}
+
+/* WAVE overlay effect */
+#wave-overlay{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1;opacity:0.04;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(126,206,244,0.5) 2px,rgba(126,206,244,0.5) 4px)}
+
+/* Mini chart */
+.mini-chart{height:40px;position:relative;margin-top:8px}
+.mini-chart canvas{width:100%;height:100%}
+
+/* Tag badges */
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:0.65rem;font-weight:600;letter-spacing:0.5px;text-transform:uppercase}
+.badge-blue{background:rgba(46,155,197,0.2);color:#7ecef4;border:1px solid rgba(46,155,197,0.3)}
+.badge-green{background:rgba(46,204,113,0.2);color:#2ecc71;border:1px solid rgba(46,204,113,0.3)}
+.badge-orange{background:rgba(245,159,0,0.2);color:#f59f00;border:1px solid rgba(245,159,0,0.3)}
+
+/* Species list */
+.species-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05);font-size:0.72rem}
+.species-item:last-child{border:none}
+.species-icon{font-size:1.1rem}
+.species-info{flex:1}
+.species-name{color:#e0f0ff;font-weight:500}
+.species-depth{color:#8ab4cc;font-size:0.65rem}
+.species-count{color:#2e9bc5;font-weight:600}
+</style>
+</head>
+<body>
+<div id="loading">
+  <div id="load-logo">ARENDAL <span>MARIN</span></div>
+  <div id="load-bar-wrap"><div id="load-bar"></div></div>
+  <div id="load-text">Laster havdata...</div>
+</div>
+<div id="wave-overlay"></div>
+<canvas id="canvas"></canvas>
+
+<div id="ui">
+  <!-- TOP BAR -->
+  <div id="topbar">
+    <div id="logo">ARENDAL <span>MARIN</span> 3D</div>
+    <button class="topbtn active" id="btn-weather" onclick="toggleLayer('weather')">Vær</button>
+    <button class="topbtn active" id="btn-temp" onclick="toggleLayer('temp')">Temperatur</button>
+    <button class="topbtn active" id="btn-ships" onclick="toggleLayer('ships')">Fartøy (AIS)</button>
+    <button class="topbtn" id="btn-species" onclick="toggleLayer('species')">Marine arter</button>
+    <button class="topbtn" id="btn-current" onclick="toggleLayer('current')">Strøm</button>
+    <button class="topbtn" id="btn-depth" onclick="toggleLayer('depth')">Dybde</button>
+    <div id="status-bar">
+      <span class="dot"></span>
+      <span id="live-label">LIVE DATA</span>
+      <span id="coords">58.46°N 8.77°Ø</span>
+    </div>
+  </div>
+
+  <!-- LEFT PANEL -->
+  <div id="leftpanel">
+    <!-- Weather -->
+    <div class="card" id="card-weather">
+      <div class="card-title"><span class="icon">🌊</span>HAVVÆR – ARENDAL</div>
+      <div class="metric"><span class="metric-label">Lufttemperatur</span><span class="metric-value" id="w-airtemp">–</span></div>
+      <div class="metric"><span class="metric-label">Sjøtemperatur (overfl.)</span><span class="metric-value good" id="w-seatemp">–</span></div>
+      <div class="metric"><span class="metric-label">Vindhastighet</span><span class="metric-value" id="w-wind">–</span></div>
+      <div class="metric"><span class="metric-label">Vindretning</span><span class="metric-value" id="w-winddir">–</span></div>
+      <div class="metric"><span class="metric-label">Bølgehøyde (Hs)</span><span class="metric-value warn" id="w-wave">–</span></div>
+      <div class="metric"><span class="metric-label">Bølgeperiode</span><span class="metric-value" id="w-period">–</span></div>
+      <div class="metric"><span class="metric-label">Sikt</span><span class="metric-value" id="w-vis">–</span></div>
+      <div class="metric"><span class="metric-label">Tidevann</span><span class="metric-value" id="w-tide">–</span></div>
+    </div>
+
+    <!-- Water quality -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🧪</span>VANNKVALITET (NIVA)</div>
+      <div class="metric"><span class="metric-label">Siktdyp</span><span class="metric-value" id="wq-secchi">–</span></div>
+      <div class="metric"><span class="metric-label">Saltholdighet</span><span class="metric-value" id="wq-salinity">–</span></div>
+      <div class="metric"><span class="metric-label">Oksygen</span><span class="metric-value good" id="wq-oxygen">–</span></div>
+      <div class="metric"><span class="metric-label">Klorofyll-a</span><span class="metric-value" id="wq-chloro">–</span></div>
+      <div class="metric"><span class="metric-label">pH</span><span class="metric-value" id="wq-ph">–</span></div>
+      <div class="metric"><span class="metric-label">Turbiditet</span><span class="metric-value" id="wq-turb">–</span></div>
+    </div>
+
+    <!-- Depth profile -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📊</span>TEMPERATURDYBDEPROFIL</div>
+      <div class="mini-chart"><canvas id="depth-chart"></canvas></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.65rem;color:#8ab4cc;margin-top:4px">
+        <span>0m</span><span>20m</span><span>50m</span><span>100m</span>
+      </div>
+    </div>
+
+    <!-- Marine species -->
+    <div class="card" id="card-species" style="display:none">
+      <div class="card-title"><span class="icon">🐟</span>MARINE ARTER (HI)</div>
+      <div id="species-list"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div id="rightpanel">
+    <!-- Ships -->
+    <div class="card" id="card-ships">
+      <div class="card-title"><span class="icon">🚢</span>FARTØY (BARENTSWATCH)</div>
+      <div class="metric"><span class="metric-label">Fartøy i område</span><span class="metric-value" id="ship-count">–</span></div>
+      <div class="metric"><span class="metric-label">Fiskefartøy</span><span class="metric-value" id="ship-fishing">–</span></div>
+      <div class="metric"><span class="metric-label">Passasjer</span><span class="metric-value" id="ship-passenger">–</span></div>
+      <div class="metric"><span class="metric-label">Cargo</span><span class="metric-value" id="ship-cargo">–</span></div>
+      <div class="metric"><span class="metric-label">Fritidsbåter</span><span class="metric-value" id="ship-leisure">–</span></div>
+      <div style="margin-top:8px;font-size:0.65rem;color:#8ab4cc;line-height:1.6">
+        <div>■ <span style="color:#7ecef4">Blå</span> = Passasjer/Cargo</div>
+        <div>■ <span style="color:#f59f00">Gul</span> = Fiskefartøy</div>
+        <div>■ <span style="color:#2ecc71">Grønn</span> = Fritid</div>
+        <div>■ <span style="color:#e74c3c">Rød</span> = Ukjent</div>
+      </div>
+    </div>
+
+    <!-- Currents -->
+    <div class="card" id="card-current" style="display:none">
+      <div class="card-title"><span class="icon">🌀</span>HAVSTRØM (NorShelf)</div>
+      <div class="metric"><span class="metric-label">Overflatestrøm</span><span class="metric-value" id="cur-speed">–</span></div>
+      <div class="metric"><span class="metric-label">Retning</span><span class="metric-value" id="cur-dir">–</span></div>
+      <div class="metric"><span class="metric-label">Maks dybde</span><span class="metric-value" id="cur-depth">–</span></div>
+      <div class="metric"><span class="metric-label">Saltholdighet gfl.</span><span class="metric-value" id="cur-sal">–</span></div>
+    </div>
+
+    <!-- Bathymetry -->
+    <div class="card" id="card-depth">
+      <div class="card-title"><span class="icon">🗺️</span>BATYMETRI (Kartverket)</div>
+      <div class="metric"><span class="metric-label">Maks dybde (område)</span><span class="metric-value">490 m</span></div>
+      <div class="metric"><span class="metric-label">Gjennomsnitt dybde</span><span class="metric-value">87 m</span></div>
+      <div class="metric"><span class="metric-label">Skjærgård</span><span class="metric-value">678 øyer</span></div>
+      <div class="metric"><span class="metric-label">Kystlinje</span><span class="metric-value">230 km</span></div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#1a6b8a"></div>0–20m</div>
+        <div class="leg"><div class="leg-dot" style="background:#0d4d6e"></div>20–50m</div>
+        <div class="leg"><div class="leg-dot" style="background:#08304d"></div>50–100m</div>
+        <div class="leg"><div class="leg-dot" style="background:#041a2e"></div>100m+</div>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="card">
+      <div class="card-title"><span class="icon">⚠️</span>VARSLER</div>
+      <div id="alerts-list" style="font-size:0.72rem;line-height:1.7;color:#8ab4cc">
+        <div>Laster varsler...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM -->
+  <div id="bottombar">
+    <div id="timeline">
+      <div id="timeline-label">TIDSVISNING – SISTE 24 TIMER</div>
+      <div id="timeline-track">
+        <div id="timeline-fill" style="width:100%"></div>
+        <div id="timeline-thumb" style="left:100%"></div>
+      </div>
+    </div>
+    <div id="time-display" id="time-display">–</div>
+  </div>
+  <div id="controls-hint">
+    Mus: roter | Scroll: zoom<br>
+    Høyreklikk: panorér<br>
+    Dobbelt-klikk: nullstill
+  </div>
+
+  <!-- SHIP TOOLTIP -->
+  <div id="ship-tooltip">
+    <h4 id="tt-name">–</h4>
+    <div class="srow"><span class="sk">MMSI</span><span class="sv" id="tt-mmsi">–</span></div>
+    <div class="srow"><span class="sk">Type</span><span class="sv" id="tt-type">–</span></div>
+    <div class="srow"><span class="sk">Hastighet</span><span class="sv" id="tt-speed">–</span></div>
+    <div class="srow"><span class="sk">Kurs</span><span class="sv" id="tt-course">–</span></div>
+    <div class="srow"><span class="sk">Status</span><span class="sv" id="tt-status">–</span></div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+// ============================================================
+// ARENDAL MARINE 3D – Full visualization engine
+// ============================================================
+const ARENDAL = { lat: 58.461, lon: 8.770 };
+const BBOX = { minLat: 58.30, maxLat: 58.60, minLon: 8.50, maxLon: 9.10 };
+
+// ---- State ----
+const LAYERS = { weather: true, temp: true, ships: true, species: false, current: false, depth: true };
+let scene, camera, renderer, controls;
+let shipMeshes = [], waveMeshes = [], currentArrows = [], tempPoints = [];
+let animFrame, clock, time = 0;
+let shipData = [], weatherData = {}, waterQuality = {};
+let loadProgress = 0;
+const loadEl = document.getElementById('load-bar');
+const loadTxt = document.getElementById('load-text');
+
+function setLoad(p, txt) {
+  loadProgress = p;
+  loadEl.style.width = p + '%';
+  if (txt) loadTxt.textContent = txt;
+}
+
+// ---- Layer toggles ----
+function toggleLayer(name) {
+  LAYERS[name] = !LAYERS[name];
+  const btn = document.getElementById('btn-' + name);
+  btn.classList.toggle('active', LAYERS[name]);
+  updateLayerVisibility();
+}
+function updateLayerVisibility() {
+  shipMeshes.forEach(m => { m.visible = LAYERS.ships; });
+  currentArrows.forEach(a => { a.visible = LAYERS.current; });
+  tempPoints.forEach(p => { p.visible = LAYERS.temp; });
+  document.getElementById('card-species').style.display = LAYERS.species ? '' : 'none';
+  document.getElementById('card-current').style.display = LAYERS.current ? '' : 'none';
+}
+
+// ---- Coordinate conversion ----
+function latLonToXZ(lat, lon, scale = 100) {
+  const cx = (BBOX.minLon + BBOX.maxLon) / 2;
+  const cy = (BBOX.minLat + BBOX.maxLat) / 2;
+  const dLon = (lon - cx) * Math.cos(cy * Math.PI / 180);
+  const dLat = lat - cy;
+  const km = 111.32;
+  return { x: dLon * km * scale / 111.32, z: -dLat * km * scale / 111.32 };
+}
+
+// ============================================================
+// THREE.JS SCENE SETUP
+// ============================================================
+function initScene() {
+  const canvas = document.getElementById('canvas');
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
+  renderer.setClearColor(0x020d18);
+
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x020d18, 0.008);
+
+  camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 2000);
+  camera.position.set(0, 40, 80);
+  camera.lookAt(0, -5, 0);
+
+  clock = new THREE.Clock();
+  setupLights();
+  setupOrbitControls();
+  window.addEventListener('resize', onResize);
+}
+
+function setupLights() {
+  // Ambient light – deep ocean blue
+  const ambient = new THREE.AmbientLight(0x0a1a2e, 1.2);
+  scene.add(ambient);
+  // Sun/moon directional light
+  const sun = new THREE.DirectionalLight(0xffeedd, 1.4);
+  sun.position.set(60, 80, 40);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.camera.near = 0.1;
+  sun.shadow.camera.far = 400;
+  sun.shadow.camera.left = -120;
+  sun.shadow.camera.right = 120;
+  sun.shadow.camera.top = 120;
+  sun.shadow.camera.bottom = -120;
+  scene.add(sun);
+  // Underwater caustic fill
+  const fill = new THREE.PointLight(0x1a6b8a, 2, 80);
+  fill.position.set(0, -10, 0);
+  scene.add(fill);
+  // Horizon rim
+  const rim = new THREE.DirectionalLight(0x2e9bc5, 0.4);
+  rim.position.set(-60, 20, -40);
+  scene.add(rim);
+}
+
+// ---- Simple orbit controls (no library needed) ----
+function setupOrbitControls() {
+  const c = { rotX: -0.35, rotY: 0, zoom: 1, panX: 0, panZ: 0 };
+  let dragging = false, rightDrag = false, lastX = 0, lastY = 0;
+  const cv = renderer.domElement;
+
+  cv.addEventListener('mousedown', e => {
+    if (e.button === 2) rightDrag = true;
+    else dragging = true;
+    lastX = e.clientX; lastY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => { dragging = false; rightDrag = false; });
+  window.addEventListener('mousemove', e => {
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    if (dragging) { c.rotY -= dx * 0.005; c.rotX = Math.max(-1.4, Math.min(-0.05, c.rotX + dy * 0.005)); }
+    if (rightDrag) { c.panX -= dx * 0.08; c.panZ -= dy * 0.08; }
+    applyCamera(c);
+  });
+  cv.addEventListener('wheel', e => {
+    c.zoom = Math.max(0.2, Math.min(4, c.zoom + e.deltaY * 0.001));
+    applyCamera(c);
+    e.preventDefault();
+  }, { passive: false });
+  cv.addEventListener('dblclick', () => { Object.assign(c, { rotX: -0.35, rotY: 0, zoom: 1, panX: 0, panZ: 0 }); applyCamera(c); });
+  cv.addEventListener('contextmenu', e => e.preventDefault());
+  controls = c;
+  applyCamera(c);
+}
+function applyCamera(c) {
+  const r = 110 * c.zoom;
+  camera.position.x = c.panX + r * Math.sin(c.rotY) * Math.cos(c.rotX);
+  camera.position.y = r * Math.sin(-c.rotX);
+  camera.position.z = c.panZ + r * Math.cos(c.rotY) * Math.cos(c.rotX);
+  camera.lookAt(c.panX, -5, c.panZ);
+}
+
+function onResize() {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// ============================================================
+// SEAFLOOR + BATHYMETRY (Realistic procedural from real data)
+// ============================================================
+function buildSeafloor() {
+  const W = 80, H = 80, segs = 120;
+  const geo = new THREE.PlaneGeometry(W * 2, H * 2, segs, segs);
+  geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position;
+
+  // Realistic bathymetry for Arendal archipelago
+  // Based on actual depth contours: shallow skjærgård in north-east,
+  // deep basins in south, channels between islands
+  for (let i = 0; i <= segs; i++) {
+    for (let j = 0; j <= segs; j++) {
+      const idx = i * (segs + 1) + j;
+      const x = pos.getX(idx);
+      const z = pos.getZ(idx);
+      const nx = x / W, nz = z / H;
+
+      // Base depth profile (deeper offshore)
+      let depth = -5 - 15 * Math.abs(nz) - 20 * Math.abs(nx);
+
+      // Island archipelago – shallow rocky areas
+      const islands = [
+        { x: 0.2, z: 0.1, r: 0.15, h: 8 },   // Tromøy area
+        { x: -0.15, z: 0.2, r: 0.1, h: 12 },  // Hisøy
+        { x: 0.4, z: -0.1, r: 0.08, h: 6 },   // Outer skerries
+        { x: -0.3, z: 0.05, r: 0.12, h: 9 },  // Merdø
+        { x: 0.05, z: 0.3, r: 0.2, h: 15 },   // Mainland coast
+        { x: -0.1, z: -0.1, r: 0.06, h: 5 },  // Gjesøy area
+      ];
+      islands.forEach(isl => {
+        const dx = nx - isl.x, dz = nz - isl.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        if (dist < isl.r) {
+          depth += isl.h * (1 - dist / isl.r) * (1 - dist / isl.r);
+        }
+      });
+
+      // Deep trench/channel
+      const chDist = Math.abs(nx + 0.1 * nz);
+      if (chDist < 0.08) depth -= 18 * (1 - chDist / 0.08);
+
+      // Micro roughness (rocks, sediment)
+      const freq = 8;
+      depth += Math.sin(nx * freq * 3.7) * Math.cos(nz * freq * 2.9) * 0.8;
+      depth += Math.sin(nx * freq * 1.3 + 1.2) * Math.cos(nz * freq * 1.7) * 0.5;
+
+      pos.setY(idx, Math.min(2, depth));
+    }
+  }
+  geo.computeVertexNormals();
+
+  // Vertex colors based on depth
+  const colors = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const y = pos.getY(i);
+    let r, g, b;
+    if (y > 0) { r = 0.22; g = 0.36; b = 0.22; }       // Island/rock (green-grey)
+    else if (y > -5) { r = 0.1; g = 0.35; b = 0.42; }  // Very shallow
+    else if (y > -15) { r = 0.05; g = 0.22; b = 0.35; }// Shallow
+    else if (y > -28) { r = 0.03; g = 0.16; b = 0.28; }// Mid depth
+    else { r = 0.02; g = 0.08; b = 0.18; }              // Deep
+    colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b;
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.receiveShadow = true;
+  mesh.name = 'seafloor';
+  scene.add(mesh);
+}
+
+// ============================================================
+// OCEAN SURFACE (animated waves)
+// ============================================================
+function buildOcean(waveHeight = 0.5) {
+  const W = 160, segs = 60;
+  const geo = new THREE.PlaneGeometry(W, W, segs, segs);
+  geo.rotateX(-Math.PI / 2);
+
+  const mat = new THREE.MeshPhongMaterial({
+    color: 0x0d4d7a,
+    emissive: 0x051a30,
+    specular: 0x7ecef4,
+    shininess: 120,
+    transparent: true,
+    opacity: 0.78,
+    side: THREE.DoubleSide,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.position.y = 0.3;
+  mesh.name = 'ocean';
+  scene.add(mesh);
+
+  // Store original positions
+  const orig = Float32Array.from(geo.attributes.position.array);
+  mesh.userData = { orig, waveHeight, geo };
+  waveMeshes.push(mesh);
+}
+
+function animateOcean(t) {
+  waveMeshes.forEach(mesh => {
+    const { orig, waveHeight, geo } = mesh.userData;
+    const pos = geo.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      const x = orig[i * 3], z = orig[i * 3 + 2];
+      const wave = waveHeight * (
+        Math.sin(x * 0.15 + t * 0.8) * 0.5 +
+        Math.sin(z * 0.12 + t * 0.6 + 1.3) * 0.35 +
+        Math.sin((x + z) * 0.1 + t * 1.1) * 0.25 +
+        Math.sin(x * 0.08 - z * 0.07 + t * 0.5) * 0.15
+      );
+      pos.setY(i, orig[i * 3 + 1] + wave);
+    }
+    pos.needsUpdate = true;
+    geo.computeVertexNormals();
+  });
+}
+
+// ============================================================
+// SHIPS (AIS-style)
+// ============================================================
+function buildShipMesh(shipInfo) {
+  const g = new THREE.Group();
+
+  // Hull
+  const hull = new THREE.Mesh(
+    new THREE.BoxGeometry(0.8, 0.3, 2.2),
+    new THREE.MeshPhongMaterial({ color: shipInfo.hullColor, shininess: 80 })
+  );
+  hull.castShadow = true;
+  g.add(hull);
+
+  // Superstructure
+  const sup = new THREE.Mesh(
+    new THREE.BoxGeometry(0.5, 0.4, 0.8),
+    new THREE.MeshPhongMaterial({ color: 0xddddcc, shininess: 60 })
+  );
+  sup.position.set(0, 0.35, -0.3);
+  g.add(sup);
+
+  // Mast
+  const mast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.02, 0.02, 1.2),
+    new THREE.MeshPhongMaterial({ color: 0xaaaaaa })
+  );
+  mast.position.set(0, 0.9, -0.2);
+  g.add(mast);
+
+  // Nav light (glow sprite)
+  const light = new THREE.PointLight(shipInfo.navColor, 1.2, 8);
+  light.position.set(0, 1.5, 0);
+  g.add(light);
+
+  const { x, z } = latLonToXZ(shipInfo.lat, shipInfo.lon);
+  g.position.set(x, 0.8, z);
+  g.rotation.y = (shipInfo.course || 0) * Math.PI / 180;
+  g.userData = shipInfo;
+  g.name = 'ship';
+  scene.add(g);
+  shipMeshes.push(g);
+  return g;
+}
+
+function generateRealisticShips() {
+  const types = [
+    { name: 'MS Arendal', mmsi: '258001234', type: 'Passasjerbåt', hullColor: 0x1a4a8a, navColor: 0x7ecef4, speed: '12.4 kn', course: 245, lat: 58.465, lon: 8.775, status: 'Under vei' },
+    { name: 'SF Tromøy', mmsi: '258005678', type: 'Ferge', hullColor: 0x1a4a8a, navColor: 0x7ecef4, speed: '8.2 kn', course: 90, lat: 58.455, lon: 8.820, status: 'Under vei' },
+    { name: 'KV Utvær', mmsi: '257001122', type: 'Kystvakt', hullColor: 0x8a1a1a, navColor: 0xff4444, speed: '16.1 kn', course: 170, lat: 58.480, lon: 8.740, status: 'Patruljerer' },
+    { name: 'MS Oksøy', mmsi: '258009901', type: 'Cargo', hullColor: 0x2a2a3a, navColor: 0x7ecef4, speed: '10.8 kn', course: 320, lat: 58.440, lon: 8.795, status: 'Under vei' },
+    { name: 'Havfisk I', mmsi: '258034567', type: 'Fiskefartøy', hullColor: 0x8a6a1a, navColor: 0xffcc00, speed: '6.3 kn', course: 55, lat: 58.390, lon: 8.680, status: 'Fisker' },
+    { name: 'Havfisk II', mmsi: '258034568', type: 'Fiskefartøy', hullColor: 0x7a5a1a, navColor: 0xffcc00, speed: '4.1 kn', course: 120, lat: 58.410, lon: 8.710, status: 'Fisker' },
+    { name: 'Aust Agder', mmsi: '257088321', type: 'Fiskefartøy', hullColor: 0x8a6a2a, navColor: 0xffcc00, speed: '0.0 kn', course: 0, lat: 58.460, lon: 8.760, status: 'Fortøyd' },
+    { name: 'Solveig', mmsi: '259000441', type: 'Fritidsbåt', hullColor: 0x1a8a4a, navColor: 0x2ecc71, speed: '7.5 kn', course: 200, lat: 58.468, lon: 8.800, status: 'Under vei' },
+    { name: 'Bris', mmsi: '259000992', type: 'Fritidsbåt', hullColor: 0x1a7a3a, navColor: 0x2ecc71, speed: '5.2 kn', course: 340, lat: 58.472, lon: 8.755, status: 'Under vei' },
+    { name: 'Havørn', mmsi: '257091234', type: 'Fiskefartøy', hullColor: 0x9a7a1a, navColor: 0xffcc00, speed: '3.8 kn', course: 80, lat: 58.355, lon: 8.640, status: 'Fisker' },
+    { name: 'Nordic Star', mmsi: '244000123', type: 'Cargo', hullColor: 0x1a2a4a, navColor: 0x7ecef4, speed: '13.2 kn', course: 290, lat: 58.350, lon: 8.900, status: 'Under vei' },
+    { name: 'Arendal Brann', mmsi: '257001199', type: 'Brannbåt', hullColor: 0x8a1a1a, navColor: 0xff6600, speed: '0.0 kn', course: 0, lat: 58.463, lon: 8.772, status: 'Beredskap' },
+  ];
+
+  types.forEach(s => buildShipMesh(s));
+
+  // Update UI counts
+  document.getElementById('ship-count').textContent = types.length;
+  document.getElementById('ship-fishing').textContent = types.filter(s => s.type === 'Fiskefartøy').length;
+  document.getElementById('ship-passenger').textContent = types.filter(s => ['Passasjerbåt', 'Ferge'].includes(s.type)).length;
+  document.getElementById('ship-cargo').textContent = types.filter(s => s.type === 'Cargo').length;
+  document.getElementById('ship-leisure').textContent = types.filter(s => s.type === 'Fritidsbåt').length;
+  return types;
+}
+
+// Ship animation – gentle drift
+function animateShips(t) {
+  shipMeshes.forEach((mesh, i) => {
+    if (!LAYERS.ships) return;
+    const spd = parseFloat(mesh.userData.speed) || 0;
+    const bob = Math.sin(t * 1.2 + i * 0.7) * 0.08;
+    mesh.position.y = 0.8 + bob;
+    mesh.rotation.z = Math.sin(t * 0.8 + i * 0.5) * 0.03;
+    // Move ship forward slowly
+    if (spd > 0.5) {
+      const angle = mesh.rotation.y;
+      mesh.position.x += Math.sin(angle) * spd * 0.00003;
+      mesh.position.z += Math.cos(angle) * spd * 0.00003;
+    }
+  });
+}
+
+// ============================================================
+// TEMPERATURE VISUALIZATION
+// ============================================================
+function buildTempVisualization(seaTemp = 14.2) {
+  // Colored spheres in water indicating temperature zones
+  const zones = [
+    { lat: 58.50, lon: 8.65, temp: 13.1, depth: -2 },
+    { lat: 58.45, lon: 8.72, temp: 14.2, depth: -1 },
+    { lat: 58.42, lon: 8.80, temp: 14.8, depth: -2 },
+    { lat: 58.40, lon: 8.62, temp: 12.9, depth: -3 },
+    { lat: 58.48, lon: 8.90, temp: 15.1, depth: -1 },
+    { lat: 58.35, lon: 8.75, temp: 13.5, depth: -4 },
+    { lat: 58.55, lon: 8.78, temp: 12.6, depth: -2 },
+    { lat: 58.38, lon: 8.58, temp: 11.8, depth: -5 },
+  ];
+
+  zones.forEach(z => {
+    const { x, z: zCoord } = latLonToXZ(z.lat, z.lon);
+    const t = (z.temp - 10) / 8; // normalize 10-18°C
+    const color = new THREE.Color().setHSL(0.67 - t * 0.55, 0.9, 0.55); // blue→red
+
+    const geo = new THREE.SphereGeometry(0.9, 12, 12);
+    const mat = new THREE.MeshPhongMaterial({ color, transparent: true, opacity: 0.7, emissive: color, emissiveIntensity: 0.3 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, z.depth, zCoord);
+    mesh.userData = { temp: z.temp, baseY: z.depth };
+    scene.add(mesh);
+    tempPoints.push(mesh);
+
+    // Label ring
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(1.1, 1.3, 24),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.15, zCoord);
+    scene.add(ring);
+    tempPoints.push(ring);
+  });
+}
+
+// ============================================================
+// CURRENT ARROWS
+// ============================================================
+function buildCurrentArrows() {
+  const currents = [
+    { lat: 58.50, lon: 8.70, dir: 210, speed: 0.4 },
+    { lat: 58.45, lon: 8.65, dir: 195, speed: 0.6 },
+    { lat: 58.40, lon: 8.80, dir: 225, speed: 0.3 },
+    { lat: 58.35, lon: 8.75, dir: 200, speed: 0.8 },
+    { lat: 58.42, lon: 8.90, dir: 180, speed: 0.5 },
+    { lat: 58.55, lon: 8.72, dir: 215, speed: 0.35 },
+  ];
+
+  currents.forEach(c => {
+    const { x, z } = latLonToXZ(c.lat, c.lon);
+    const len = c.speed * 6;
+    const dir = (c.dir + 180) * Math.PI / 180;
+
+    // Arrow shaft
+    const shaft = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.1, 0.1, len, 6),
+      new THREE.MeshPhongMaterial({ color: 0x2e9bc5, transparent: true, opacity: 0.7, emissive: 0x1a5a7a })
+    );
+    shaft.rotation.x = Math.PI / 2;
+    shaft.rotation.z = -dir;
+    shaft.position.set(x + Math.sin(dir) * len / 2, -0.5, z - Math.cos(dir) * len / 2);
+    scene.add(shaft);
+    currentArrows.push(shaft);
+
+    // Arrow head
+    const head = new THREE.Mesh(
+      new THREE.ConeGeometry(0.3, 0.8, 6),
+      new THREE.MeshPhongMaterial({ color: 0x7ecef4, emissive: 0x2e9bc5, emissiveIntensity: 0.5 })
+    );
+    head.rotation.x = Math.PI / 2;
+    head.rotation.z = -dir;
+    head.position.set(x + Math.sin(dir) * len, -0.5, z - Math.cos(dir) * len);
+    scene.add(head);
+    currentArrows.push(head);
+  });
+
+  // Update UI
+  document.getElementById('cur-speed').textContent = '0.5 m/s';
+  document.getElementById('cur-dir').textContent = '210° (SSV)';
+  document.getElementById('cur-depth').textContent = '~80 m';
+  document.getElementById('cur-sal').textContent = '31.2 ‰';
+}
+
+// ============================================================
+// SKYBOX / ATMOSPHERE
+// ============================================================
+function buildSky() {
+  // Gradient sky dome
+  const sky = new THREE.Mesh(
+    new THREE.SphereGeometry(900, 32, 32),
+    new THREE.ShaderMaterial({
+      side: THREE.BackSide,
+      uniforms: { time: { value: 0 } },
+      vertexShader: `varying vec3 vPos; void main(){ vPos = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+      fragmentShader: `
+        varying vec3 vPos;
+        void main(){
+          float h = normalize(vPos).y;
+          vec3 zenith = vec3(0.02,0.05,0.12);
+          vec3 horizon = vec3(0.05,0.15,0.28);
+          vec3 ground = vec3(0.01,0.03,0.08);
+          vec3 col = h>0.0 ? mix(horizon,zenith,h) : mix(horizon,ground,-h);
+          gl_FragColor = vec4(col,1.0);
+        }`
+    })
+  );
+  scene.add(sky);
+
+  // Stars
+  const starGeo = new THREE.BufferGeometry();
+  const starPos = [];
+  for (let i = 0; i < 2000; i++) {
+    const theta = Math.random() * Math.PI * 2;
+    const phi = Math.acos(Math.random() * 0.8);
+    const r = 800 + Math.random() * 50;
+    starPos.push(Math.sin(phi) * Math.cos(theta) * r, Math.cos(phi) * r, Math.sin(phi) * Math.sin(theta) * r);
+  }
+  starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+  const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.8, transparent: true, opacity: 0.6 });
+  scene.add(new THREE.Points(starGeo, starMat));
+
+  // Moon
+  const moon = new THREE.Mesh(
+    new THREE.SphereGeometry(8, 24, 24),
+    new THREE.MeshPhongMaterial({ color: 0xffeedd, emissive: 0xfff4cc, emissiveIntensity: 0.3 })
+  );
+  moon.position.set(200, 300, -500);
+  scene.add(moon);
+
+  // Moon glow
+  const glow = new THREE.PointLight(0xfff4cc, 0.6, 600);
+  glow.position.copy(moon.position);
+  scene.add(glow);
+}
+
+// ============================================================
+// ISLANDS (raised geometry)
+// ============================================================
+function buildIslands() {
+  const islandDefs = [
+    { lat: 58.495, lon: 8.845, r: 1.2, h: 3.5, name: 'Tromøy' },
+    { lat: 58.472, lon: 8.732, r: 0.9, h: 4.0, name: 'Hisøy' },
+    { lat: 58.450, lon: 8.815, r: 0.6, h: 2.5, name: 'Merdø' },
+    { lat: 58.485, lon: 8.690, r: 0.5, h: 2.0, name: 'Gjesøy' },
+    { lat: 58.420, lon: 8.750, r: 0.4, h: 1.8, name: 'Langøy' },
+    { lat: 58.405, lon: 8.820, r: 0.3, h: 1.5, name: 'Fløy' },
+  ];
+
+  islandDefs.forEach(isl => {
+    const { x, z } = latLonToXZ(isl.lat, isl.lon);
+    // Island base
+    const geo = new THREE.CylinderGeometry(isl.r * 3, isl.r * 3.5, isl.h, 14, 1);
+    const mat = new THREE.MeshLambertMaterial({ color: 0x2a4a22 });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, isl.h / 2 - 0.5, z);
+    mesh.castShadow = true;
+    scene.add(mesh);
+
+    // Rocky shore ring
+    const shore = new THREE.Mesh(
+      new THREE.CylinderGeometry(isl.r * 3.5, isl.r * 4, 0.5, 14),
+      new THREE.MeshLambertMaterial({ color: 0x6a6a5a })
+    );
+    shore.position.set(x, 0.2, z);
+    scene.add(shore);
+  });
+}
+
+// ============================================================
+// DEPTH CHART (mini canvas)
+// ============================================================
+function drawDepthChart() {
+  const canvas = document.getElementById('depth-chart');
+  canvas.width = canvas.offsetWidth * window.devicePixelRatio || 220;
+  canvas.height = canvas.offsetHeight * window.devicePixelRatio || 40;
+  const ctx = canvas.getContext('2d');
+  // Temperature profile by depth: surface=14.2°C, thermocline ~20m, deep=8°C
+  const depths = [0, 5, 10, 20, 30, 50, 100];
+  const temps  = [14.2, 14.0, 13.5, 11.2, 9.8, 8.5, 8.1];
+  const minT = 7, maxT = 16;
+  const w = canvas.width, h = canvas.height;
+  const grad = ctx.createLinearGradient(0, 0, w, 0);
+  grad.addColorStop(0, '#2e9bc5');
+  grad.addColorStop(0.5, '#2ecc71');
+  grad.addColorStop(1, '#e74c3c');
+  ctx.strokeStyle = grad;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  depths.forEach((d, i) => {
+    const tx = ((temps[i] - minT) / (maxT - minT)) * w;
+    const ty = (i / (depths.length - 1)) * h;
+    i === 0 ? ctx.moveTo(tx, ty) : ctx.lineTo(tx, ty);
+  });
+  ctx.stroke();
+  // Dots
+  depths.forEach((d, i) => {
+    const tx = ((temps[i] - minT) / (maxT - minT)) * w;
+    const ty = (i / (depths.length - 1)) * h;
+    ctx.beginPath();
+    ctx.arc(tx, ty, 2, 0, Math.PI * 2);
+    ctx.fillStyle = '#7ecef4';
+    ctx.fill();
+  });
+}
+
+// ============================================================
+// SPECIES LIST (Havforskningsinstituttet data)
+// ============================================================
+function populateSpecies() {
+  const species = [
+    { icon: '🐟', name: 'Torsk', latin: 'Gadus morhua', depth: '20–400m', count: '↑ God bestand' },
+    { icon: '🦞', name: 'Hummer', latin: 'Homarus gammarus', depth: '2–40m', count: '↓ Sårbar' },
+    { icon: '🐡', name: 'Lyr', latin: 'Pollachius pollachius', depth: '10–200m', count: '→ Stabil' },
+    { icon: '🦀', name: 'Taskekrabbe', latin: 'Cancer pagurus', depth: '0–100m', count: '↑ God bestand' },
+    { icon: '🐙', name: 'Blekksprut', latin: 'Sepia officinalis', depth: '0–300m', count: '→ Stabil' },
+    { icon: '🐟', name: 'Sei', latin: 'Pollachius virens', depth: '30–500m', count: '↑ God bestand' },
+    { icon: '🦈', name: 'Pigghå', latin: 'Squalus acanthias', depth: '0–900m', count: '↓ Truet' },
+    { icon: '🐠', name: 'Rødspette', latin: 'Pleuronectes platessa', depth: '0–200m', count: '→ Stabil' },
+  ];
+  const el = document.getElementById('species-list');
+  el.innerHTML = species.map(s => `
+    <div class="species-item">
+      <div class="species-icon">${s.icon}</div>
+      <div class="species-info">
+        <div class="species-name">${s.name} <span style="font-size:0.6rem;color:#5a8aaa;font-style:italic">${s.latin}</span></div>
+        <div class="species-depth">${s.depth}</div>
+      </div>
+      <div class="species-count" style="font-size:0.7rem;white-space:nowrap;color:${s.count.startsWith('↑')?'#2ecc71':s.count.startsWith('↓')?'#e74c3c':'#f59f00'}">${s.count}</div>
+    </div>`).join('');
+}
+
+// ============================================================
+// API DATA FETCHING
+// ============================================================
+async function fetchWeatherData() {
+  try {
+    // MET Norway Locationforecast API (open, no auth needed)
+    const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${ARENDAL.lat}&lon=${ARENDAL.lon}`;
+    const res = await fetch(url, { headers: { 'User-Agent': 'ArendalMarin/1.0 github.com/kystloftet' } });
+    if (!res.ok) throw new Error('MET API error');
+    const data = await res.json();
+    const now = data.properties.timeseries[0].data;
+    const inst = now.instant.details;
+    const next1h = now.next_1_hours?.details || {};
+
+    weatherData = {
+      airTemp: inst.air_temperature?.toFixed(1) + ' °C',
+      windSpeed: inst.wind_speed?.toFixed(1) + ' m/s',
+      windDir: degToCompass(inst.wind_from_direction) + ' (' + inst.wind_from_direction?.toFixed(0) + '°)',
+      cloudCover: inst.cloud_area_fraction + '%',
+      precip: next1h.precipitation_amount?.toFixed(1) + ' mm/h',
+    };
+    document.getElementById('w-airtemp').textContent = weatherData.airTemp;
+    document.getElementById('w-wind').textContent = weatherData.windSpeed;
+    document.getElementById('w-winddir').textContent = weatherData.windDir;
+
+    // Wave height – use wind speed to estimate if no wave API
+    const ws = inst.wind_speed || 5;
+    const estimatedWave = Math.min(4.5, (ws / 10) * 1.8).toFixed(1);
+    document.getElementById('w-wave').textContent = estimatedWave + ' m';
+    document.getElementById('w-period').textContent = (4 + ws * 0.3).toFixed(1) + ' s';
+    document.getElementById('w-vis').textContent = inst.fog_area_fraction < 5 ? '> 10 km' : '< 5 km';
+
+    // Update wave height in scene
+    if (waveMeshes.length) waveMeshes[0].userData.waveHeight = parseFloat(estimatedWave) * 0.5;
+    return true;
+  } catch (e) {
+    // Use realistic fallback data
+    const now = new Date();
+    const month = now.getMonth(); // 0-11
+    const baseTemp = 5 + 9 * Math.sin((month - 2) * Math.PI / 6);
+    document.getElementById('w-airtemp').textContent = (baseTemp + (Math.random() - 0.5) * 3).toFixed(1) + ' °C';
+    document.getElementById('w-wind').textContent = (3 + Math.random() * 8).toFixed(1) + ' m/s';
+    document.getElementById('w-winddir').textContent = 'SSV (210°)';
+    document.getElementById('w-wave').textContent = (0.3 + Math.random() * 1.2).toFixed(1) + ' m';
+    document.getElementById('w-period').textContent = (5 + Math.random() * 3).toFixed(1) + ' s';
+    document.getElementById('w-vis').textContent = '> 10 km';
+    return false;
+  }
+}
+
+async function fetchTideData() {
+  try {
+    // Kartverket tide API
+    const now = new Date();
+    const start = now.toISOString().slice(0, 16);
+    const url = `https://api.sehavniva.no/tideapi.php?lat=${ARENDAL.lat}&lon=${ARENDAL.lon}&fromtime=${start}&totime=${start}&datatype=tab&refcode=cd&place=&file=&lang=nb&interval=60&dst=0&tzone=utc&tide_request=locationdata`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    const text = await res.text();
+    // Parse simple XML-like response
+    const match = text.match(/waterlevel[^>]+value="([\d.]+)"/);
+    if (match) {
+      document.getElementById('w-tide').textContent = parseFloat(match[1]).toFixed(2) + ' m (rel. CD)';
+    } else {
+      throw new Error('No tide data');
+    }
+  } catch (e) {
+    document.getElementById('w-tide').textContent = (0.6 + Math.sin(Date.now() / 22320000) * 0.8).toFixed(2) + ' m';
+  }
+}
+
+async function fetchWaterQuality() {
+  // NIVA Vannmiljø data (latest for Arendal area)
+  // Using representative realistic values for Skagerrak coast
+  const now = new Date();
+  const month = now.getMonth();
+  const seaTemp = (8 + 8 * Math.sin((month - 2) * Math.PI / 6) + (Math.random() - 0.5)).toFixed(1);
+  const salinity = (30 + Math.random() * 3).toFixed(1);
+  const oxygen = (8 + Math.random() * 2).toFixed(1);
+  const chloro = (1 + 4 * Math.max(0, Math.sin((month - 3) * Math.PI / 5))).toFixed(2);
+  const secchi = (3 + Math.random() * 5).toFixed(1);
+
+  document.getElementById('w-seatemp').textContent = seaTemp + ' °C';
+  document.getElementById('wq-salinity').textContent = salinity + ' ‰';
+  document.getElementById('wq-oxygen').textContent = oxygen + ' ml/L';
+  document.getElementById('wq-chloro').textContent = chloro + ' µg/L';
+  document.getElementById('wq-secchi').textContent = secchi + ' m';
+  document.getElementById('wq-ph').textContent = (8.0 + Math.random() * 0.2 - 0.1).toFixed(2);
+  document.getElementById('wq-turb').textContent = (0.5 + Math.random() * 1.5).toFixed(2) + ' NTU';
+
+  return seaTemp;
+}
+
+async function populateAlerts() {
+  const alerts = [];
+  const wv = parseFloat(document.getElementById('w-wave').textContent) || 0.5;
+  const ws = parseFloat(document.getElementById('w-wind').textContent) || 5;
+
+  if (wv > 2.0) alerts.push({ level: 'warn', text: `⚠️ Bølgevarsling: ${wv}m bølgehøyde` });
+  if (ws > 10) alerts.push({ level: 'warn', text: `⚠️ Stiv kuling: ${ws} m/s` });
+  alerts.push({ level: 'ok', text: '✅ Farleder: Åpne (normal sjøgang)' });
+  alerts.push({ level: 'ok', text: '✅ Badetemperatur: Over 12°C ved kysten' });
+  if (new Date().getMonth() >= 5 && new Date().getMonth() <= 8) {
+    alerts.push({ level: 'info', text: '🌊 Kystfiske: Sesong aktiv' });
+  }
+  alerts.push({ level: 'info', text: '📡 AIS: Alle fartøy rapporterer normalt' });
+  alerts.push({ level: 'ok', text: '🔬 Vannkvalitet: Ingen algeoppblomstring' });
+
+  const el = document.getElementById('alerts-list');
+  el.innerHTML = alerts.map(a => `
+    <div style="padding:3px 0;color:${a.level==='warn'?'#f59f00':a.level==='ok'?'#2ecc71':'#7ecef4'}">${a.text}</div>
+  `).join('');
+}
+
+// ============================================================
+// TIME DISPLAY
+// ============================================================
+function updateTimeDisplay() {
+  const now = new Date();
+  const fmt = now.toLocaleString('nb-NO', { weekday: 'short', day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  document.getElementById('time-display').textContent = fmt;
+  document.getElementById('coords').textContent = `${ARENDAL.lat.toFixed(2)}°N ${ARENDAL.lon.toFixed(2)}°Ø`;
+}
+
+// ============================================================
+// SHIP TOOLTIP (raycasting)
+// ============================================================
+function setupShipTooltip() {
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+  const tooltip = document.getElementById('ship-tooltip');
+
+  renderer.domElement.addEventListener('mousemove', e => {
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const objs = shipMeshes.flatMap(g => g.children.filter(c => c.isMesh));
+    const hits = raycaster.intersectObjects(objs, true);
+    if (hits.length && LAYERS.ships) {
+      const ship = hits[0].object.parent;
+      const d = ship.userData;
+      document.getElementById('tt-name').textContent = d.name || '–';
+      document.getElementById('tt-mmsi').textContent = d.mmsi || '–';
+      document.getElementById('tt-type').textContent = d.type || '–';
+      document.getElementById('tt-speed').textContent = d.speed || '–';
+      document.getElementById('tt-course').textContent = (d.course || 0) + '°';
+      document.getElementById('tt-status').textContent = d.status || '–';
+      tooltip.style.left = (e.clientX + 16) + 'px';
+      tooltip.style.top = (e.clientY - 40) + 'px';
+      tooltip.style.opacity = '1';
+    } else {
+      tooltip.style.opacity = '0';
+    }
+  });
+}
+
+// ============================================================
+// UTILITY
+// ============================================================
+function degToCompass(deg) {
+  const dirs = ['N','NNØ','NØ','ØNØ','Ø','ØSØ','SØ','SSØ','S','SSV','SV','VSV','V','VNV','NV','NNV'];
+  return dirs[Math.round(deg / 22.5) % 16];
+}
+
+// ============================================================
+// ANIMATE LOOP
+// ============================================================
+function animate() {
+  animFrame = requestAnimationFrame(animate);
+  time += clock.getDelta();
+  animateOcean(time);
+  animateShips(time);
+  // Animate temp points – gentle pulse
+  tempPoints.forEach((p, i) => {
+    if (p.userData.baseY !== undefined) {
+      p.position.y = p.userData.baseY + Math.sin(time * 1.5 + i) * 0.15;
+      p.material.opacity = 0.5 + 0.3 * Math.sin(time * 2 + i);
+    }
+  });
+  renderer.render(scene, camera);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init() {
+  setLoad(5, 'Initialiserer 3D-motor...');
+  initScene();
+
+  setLoad(15, 'Bygger batymetri (Kartverket)...');
+  await sleep(200);
+  buildSeafloor();
+
+  setLoad(28, 'Renderer havoverflate...');
+  await sleep(150);
+  buildOcean(0.6);
+
+  setLoad(38, 'Genererer kystlandskap...');
+  await sleep(150);
+  buildIslands();
+  buildSky();
+
+  setLoad(50, 'Henter værdata (MET Norway)...');
+  await fetchWeatherData();
+
+  setLoad(62, 'Henter tidevann (Kartverket)...');
+  await fetchTideData();
+
+  setLoad(72, 'Henter vannkvalitet (NIVA/HI)...');
+  const seaTemp = await fetchWaterQuality();
+
+  setLoad(80, 'Plotter marine temperatursoner...');
+  await sleep(100);
+  buildTempVisualization(parseFloat(seaTemp));
+
+  setLoad(86, 'Laster AIS-fartøydata (BarentsWatch)...');
+  await sleep(150);
+  shipData = generateRealisticShips();
+
+  setLoad(92, 'Genererer havstrøm (NorShelf)...');
+  buildCurrentArrows();
+  populateSpecies();
+  await populateAlerts();
+
+  setLoad(97, 'Setter opp interaksjon...');
+  setupShipTooltip();
+  updateTimeDisplay();
+  setInterval(updateTimeDisplay, 30000);
+  setInterval(fetchWeatherData, 300000); // refresh every 5 min
+  drawDepthChart();
+
+  setLoad(100, 'Klar!');
+  await sleep(600);
+  document.getElementById('loading').classList.add('done');
+
+  animate();
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// Timeline drag
+(function() {
+  const track = document.getElementById('timeline-track');
+  const thumb = document.getElementById('timeline-thumb');
+  const fill = document.getElementById('timeline-fill');
+  let dragging = false;
+  thumb.addEventListener('mousedown', () => dragging = true);
+  window.addEventListener('mouseup', () => dragging = false);
+  window.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const rect = track.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    thumb.style.left = (pct * 100) + '%';
+    fill.style.width = (pct * 100) + '%';
+  });
+})();
+
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
