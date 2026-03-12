@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kystløftet — Prosjekttavle</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --navy: #0d2b45; --blue: #2e9bc5; --light: #7ecef4;
+      --green: #2ecc71; --cream: #f4f1eb; --dark: #020d18;
+      --col-bg: #f0f4f8; --card-bg: #fff; --border: #d1dde8;
+      --text: #0d2b45; --text-muted: #607d8b;
+      --todo-col: #e8f0fe; --prog-col: #e3f9ef; --review-col: #fff8e1; --done-col: #ede7f6;
+      --todo-hd: #3b5bdb; --prog-hd: #2ecc71; --review-hd: #f59f00; --done-hd: #7950f2;
+    }
+    html { height: 100%; }
+    body { font-family: 'Inter', sans-serif; color: var(--text); background: var(--col-bg); height: 100%; display: flex; flex-direction: column; }
+
+    /* TOP NAV */
+    .topbar {
+      background: var(--navy); color: #fff;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 1.5rem; height: 52px; flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .topbar-left { display: flex; align-items: center; gap: 1.4rem; }
+    .brand { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.4rem; letter-spacing: 0.08em; color: #fff; text-decoration: none; }
+    .brand span { color: var(--light); }
+    .project-badge { background: rgba(46,155,197,0.25); border: 1px solid rgba(46,155,197,0.5); color: var(--light); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; padding: 0.25rem 0.8rem; border-radius: 4px; }
+    .topbar-right { display: flex; align-items: center; gap: 0.8rem; }
+    .topbar-btn {
+      background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+      color: #fff; padding: 0.35rem 1rem; border-radius: 6px;
+      font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: background 0.15s;
+    }
+    .topbar-btn:hover { background: rgba(255,255,255,0.22); }
+    .topbar-btn.primary { background: var(--blue); border-color: var(--blue); }
+    .topbar-btn.primary:hover { background: #1e86b0; border-color: #1e86b0; }
+
+    /* TOOLBAR */
+    .toolbar {
+      background: #fff; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 1rem; padding: 0.6rem 1.5rem;
+      flex-shrink: 0; flex-wrap: wrap;
+    }
+    .toolbar-group { display: flex; align-items: center; gap: 0.5rem; }
+    .view-btn {
+      background: none; border: 1px solid var(--border); color: var(--text-muted);
+      padding: 0.3rem 0.85rem; border-radius: 6px; font-size: 0.78rem; font-weight: 600;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .view-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .view-btn:hover:not(.active) { border-color: var(--blue); color: var(--blue); }
+    .search-box {
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.3rem 0.7rem; font-size: 0.8rem; color: var(--text);
+      outline: none; transition: border-color 0.15s; width: 200px;
+    }
+    .search-box:focus { border-color: var(--blue); }
+    select.filter-sel {
+      border: 1px solid var(--border); border-radius: 6px;
+      padding: 0.3rem 0.7rem; font-size: 0.78rem; color: var(--text);
+      background: #fff; outline: none; cursor: pointer;
+    }
+    select.filter-sel:focus { border-color: var(--blue); }
+    .sprint-label { font-size: 0.78rem; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+
+    /* MAIN */
+    .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* BOARD VIEW */
+    #board-view { flex: 1; display: flex; gap: 0; padding: 1.2rem 1.5rem; overflow-x: auto; overflow-y: hidden; }
+    .board-col {
+      flex: 0 0 270px; display: flex; flex-direction: column;
+      background: #edf2f7; border-radius: 10px; margin-right: 1rem;
+      max-height: 100%;
+    }
+    .col-header {
+      padding: 0.8rem 1rem 0.6rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      border-radius: 10px 10px 0 0;
+    }
+    .col-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .col-title { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+    .col-count { font-size: 0.72rem; background: rgba(0,0,0,0.12); color: inherit; padding: 0.1rem 0.45rem; border-radius: 999px; font-weight: 700; margin-left: auto; }
+    .col-add-btn {
+      background: none; border: none; font-size: 1.1rem; cursor: pointer;
+      opacity: 0.5; transition: opacity 0.15s; line-height: 1; padding: 0 0.2rem;
+    }
+    .col-add-btn:hover { opacity: 1; }
+    .col-body { flex: 1; overflow-y: auto; padding: 0.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .col-body::-webkit-scrollbar { width: 4px; }
+    .col-body::-webkit-scrollbar-thumb { background: #c0cdd8; border-radius: 2px; }
+    [data-col="todo"] .col-dot { background: var(--todo-hd); }
+    [data-col="todo"] .col-title { color: var(--todo-hd); }
+    [data-col="inprogress"] .col-dot { background: var(--prog-hd); }
+    [data-col="inprogress"] .col-title { color: var(--prog-hd); }
+    [data-col="review"] .col-dot { background: var(--review-hd); }
+    [data-col="review"] .col-title { color: var(--review-hd); }
+    [data-col="done"] .col-dot { background: var(--done-hd); }
+    [data-col="done"] .col-title { color: var(--done-hd); }
+
+    /* CARDS */
+    .issue-card {
+      background: #fff; border-radius: 8px;
+      padding: 0.75rem; box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      cursor: pointer; transition: box-shadow 0.15s, transform 0.1s;
+      border: 1px solid transparent;
+    }
+    .issue-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.12); border-color: var(--blue); transform: translateY(-1px); }
+    .issue-card.dragging { opacity: 0.5; }
+    .card-type-row { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem; }
+    .type-badge { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.15rem 0.5rem; border-radius: 4px; }
+    .type-story { background: #e3f9ef; color: #1a8a4a; }
+    .type-bug { background: #ffe8e8; color: #c62828; }
+    .type-task { background: #e8f0fe; color: #1a56db; }
+    .type-epic { background: #f3e8ff; color: #7e22ce; }
+    .issue-id { font-size: 0.65rem; font-weight: 600; color: var(--text-muted); margin-left: auto; }
+    .card-title { font-size: 0.82rem; font-weight: 600; color: var(--text); line-height: 1.4; margin-bottom: 0.55rem; }
+    .card-footer { display: flex; align-items: center; gap: 0.4rem; }
+    .priority-icon { font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 4px; }
+    .prio-critical { background: #ffe0e0; color: #b71c1c; }
+    .prio-high { background: #fff0e0; color: #e65100; }
+    .prio-medium { background: #fff8e1; color: #f57f17; }
+    .prio-low { background: #e8f5e9; color: #2e7d32; }
+    .assignee-avatar {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--navy); color: #fff;
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      display: flex; align-items: center; justify-content: center;
+      margin-left: auto;
+    }
+    .story-pts { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); background: #edf2f7; padding: 0.1rem 0.4rem; border-radius: 4px; }
+
+    /* DROP ZONE */
+    .drop-zone { border: 2px dashed var(--blue); border-radius: 6px; min-height: 50px; background: rgba(46,155,197,0.05); }
+
+    /* LIST VIEW */
+    #list-view { flex: 1; overflow-y: auto; padding: 1.2rem 1.5rem; display: none; }
+    .list-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .list-table thead tr { background: var(--navy); color: #fff; }
+    .list-table th { padding: 0.7rem 1rem; font-size: 0.75rem; font-weight: 700; text-align: left; white-space: nowrap; letter-spacing: 0.05em; }
+    .list-table tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; }
+    .list-table tbody tr:last-child { border-bottom: none; }
+    .list-table tbody tr:hover { background: #f0f7ff; }
+    .list-table td { padding: 0.65rem 1rem; font-size: 0.8rem; color: var(--text); vertical-align: middle; }
+    .status-pill { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; padding: 0.2rem 0.6rem; border-radius: 999px; display: inline-block; }
+    .status-todo { background: #e8f0fe; color: var(--todo-hd); }
+    .status-inprogress { background: #e3f9ef; color: var(--prog-hd); }
+    .status-review { background: #fff8e1; color: var(--review-hd); }
+    .status-done { background: #ede7f6; color: var(--done-hd); }
+
+    /* MODAL OVERLAY */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 900; display: none; align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
+    .modal {
+      background: #fff; border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+      width: 640px; max-width: 96vw; max-height: 90vh;
+      overflow-y: auto; display: flex; flex-direction: column;
+    }
+    .modal-header {
+      display: flex; align-items: center; padding: 1.2rem 1.5rem 0.8rem;
+      border-bottom: 1px solid var(--border); gap: 0.8rem;
+    }
+    .modal-title { font-size: 1rem; font-weight: 700; color: var(--navy); flex: 1; }
+    .modal-close { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted); line-height: 1; transition: color 0.15s; }
+    .modal-close:hover { color: var(--navy); }
+    .modal-body { padding: 1.2rem 1.5rem; display: flex; flex-direction: column; gap: 1rem; }
+    .form-row { display: flex; gap: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
+    .form-label { font-size: 0.75rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
+    .form-input, .form-select, .form-textarea {
+      border: 1px solid var(--border); border-radius: 7px;
+      padding: 0.5rem 0.75rem; font-size: 0.85rem; color: var(--text);
+      font-family: inherit; outline: none; transition: border-color 0.15s;
+      background: #fff;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(46,155,197,0.1); }
+    .form-textarea { min-height: 80px; resize: vertical; }
+    .modal-footer { padding: 0.8rem 1.5rem 1.2rem; display: flex; justify-content: flex-end; gap: 0.7rem; border-top: 1px solid var(--border); }
+    .btn { padding: 0.5rem 1.2rem; border-radius: 7px; font-size: 0.83rem; font-weight: 600; cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+    .btn-secondary { background: #f0f4f8; border-color: var(--border); color: var(--text); }
+    .btn-secondary:hover { background: #e2eaf2; }
+    .btn-primary { background: var(--navy); color: #fff; }
+    .btn-primary:hover { background: var(--blue); }
+    .btn-danger { background: #fff0f0; border-color: #ffcdd2; color: #c62828; }
+    .btn-danger:hover { background: #ffcdd2; }
+
+    /* DETAIL MODAL */
+    .detail-meta { display: flex; flex-wrap: wrap; gap: 1rem; background: #f8fafd; border-radius: 8px; padding: 0.9rem 1rem; }
+    .meta-item { display: flex; flex-direction: column; gap: 0.2rem; min-width: 90px; }
+    .meta-key { font-size: 0.68rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.07em; }
+    .meta-val { font-size: 0.82rem; font-weight: 600; color: var(--text); }
+    .detail-desc { font-size: 0.85rem; line-height: 1.7; color: var(--text); white-space: pre-wrap; }
+    .comments-section { border-top: 1px solid var(--border); padding-top: 1rem; display: flex; flex-direction: column; gap: 0.7rem; }
+    .comment { display: flex; gap: 0.7rem; }
+    .comment-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 0.65rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+    .comment-body { flex: 1; }
+    .comment-author { font-size: 0.75rem; font-weight: 700; color: var(--text); }
+    .comment-time { font-size: 0.68rem; color: var(--text-muted); margin-left: 0.5rem; }
+    .comment-text { font-size: 0.82rem; color: var(--text); line-height: 1.5; margin-top: 0.2rem; }
+    .comment-input-row { display: flex; gap: 0.6rem; align-items: flex-start; }
+
+    /* SPRINT HEADER */
+    .sprint-bar { background: #fff; border-bottom: 1px solid var(--border); padding: 0.5rem 1.5rem; display: flex; align-items: center; gap: 1.2rem; flex-shrink: 0; }
+    .sprint-name { font-size: 0.82rem; font-weight: 700; color: var(--navy); }
+    .sprint-dates { font-size: 0.75rem; color: var(--text-muted); }
+    .sprint-progress { flex: 1; max-width: 200px; }
+    .progress-bar { height: 6px; background: #e2eaf2; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.3s; }
+    .progress-label { font-size: 0.68rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+    /* EMPTY STATE */
+    .empty-col { text-align: center; padding: 1.5rem 0.5rem; color: var(--text-muted); font-size: 0.78rem; opacity: 0.6; }
+
+    /* TOAST */
+    .toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 9999;
+      background: var(--navy); color: #fff;
+      padding: 0.65rem 1.2rem; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25); opacity: 0; transform: translateY(8px);
+      transition: opacity 0.2s, transform 0.2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* SCROLLBAR */
+    #board-view::-webkit-scrollbar { height: 6px; }
+    #board-view::-webkit-scrollbar-thumb { background: #c0cdd8; border-radius: 3px; }
+    #list-view::-webkit-scrollbar { width: 6px; }
+    #list-view::-webkit-scrollbar-thumb { background: #c0cdd8; border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topbar">
+  <div class="topbar-left">
+    <a href="index.html" class="brand">KYST<span>LØFTET</span></a>
+    <span class="project-badge">KYS — Sprint 3</span>
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-btn" onclick="openSprintModal()">Ny sprint</button>
+    <button class="topbar-btn primary" onclick="openCreateModal()">+ Opprett sak</button>
+  </div>
+</nav>
+
+<!-- SPRINT BAR -->
+<div class="sprint-bar" id="sprint-bar">
+  <span class="sprint-name" id="sprint-name-label">Sprint 3</span>
+  <span class="sprint-dates" id="sprint-dates-label">1. mar — 14. mar 2026</span>
+  <div class="sprint-progress">
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <div class="progress-label" id="progress-label">0 av 0 saker fullført</div>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="toolbar-group">
+    <button class="view-btn active" id="btn-board" onclick="setView('board')">Tavle</button>
+    <button class="view-btn" id="btn-list" onclick="setView('list')">Liste</button>
+  </div>
+  <input class="search-box" type="text" placeholder="Søk i saker…" id="search-input" oninput="renderAll()">
+  <select class="filter-sel" id="filter-type" onchange="renderAll()">
+    <option value="">Alle typer</option>
+    <option value="story">Story</option>
+    <option value="bug">Bug</option>
+    <option value="task">Oppgave</option>
+    <option value="epic">Episk</option>
+  </select>
+  <select class="filter-sel" id="filter-priority" onchange="renderAll()">
+    <option value="">Alle prioriteter</option>
+    <option value="critical">Kritisk</option>
+    <option value="high">Høy</option>
+    <option value="medium">Medium</option>
+    <option value="low">Lav</option>
+  </select>
+  <select class="filter-sel" id="filter-assignee" onchange="renderAll()">
+    <option value="">Alle tildelt</option>
+  </select>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+  <!-- BOARD VIEW -->
+  <div id="board-view">
+    <div class="board-col" data-col="todo">
+      <div class="col-header">
+        <div class="col-dot"></div>
+        <span class="col-title">Gjøremål</span>
+        <span class="col-count" id="count-todo">0</span>
+        <button class="col-add-btn" onclick="openCreateModal('todo')" title="Legg til sak">＋</button>
+      </div>
+      <div class="col-body" id="col-todo" ondragover="onDragOver(event)" ondrop="onDrop(event,'todo')"></div>
+    </div>
+    <div class="board-col" data-col="inprogress">
+      <div class="col-header">
+        <div class="col-dot"></div>
+        <span class="col-title">Pågår</span>
+        <span class="col-count" id="count-inprogress">0</span>
+        <button class="col-add-btn" onclick="openCreateModal('inprogress')" title="Legg til sak">＋</button>
+      </div>
+      <div class="col-body" id="col-inprogress" ondragover="onDragOver(event)" ondrop="onDrop(event,'inprogress')"></div>
+    </div>
+    <div class="board-col" data-col="review">
+      <div class="col-header">
+        <div class="col-dot"></div>
+        <span class="col-title">Gjennomgang</span>
+        <span class="col-count" id="count-review">0</span>
+        <button class="col-add-btn" onclick="openCreateModal('review')" title="Legg til sak">＋</button>
+      </div>
+      <div class="col-body" id="col-review" ondragover="onDragOver(event)" ondrop="onDrop(event,'review')"></div>
+    </div>
+    <div class="board-col" data-col="done">
+      <div class="col-header">
+        <div class="col-dot"></div>
+        <span class="col-title">Ferdig</span>
+        <span class="col-count" id="count-done">0</span>
+        <button class="col-add-btn" onclick="openCreateModal('done')" title="Legg til sak">＋</button>
+      </div>
+      <div class="col-body" id="col-done" ondragover="onDragOver(event)" ondrop="onDrop(event,'done')"></div>
+    </div>
+  </div>
+
+  <!-- LIST VIEW -->
+  <div id="list-view">
+    <table class="list-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Type</th>
+          <th>Tittel</th>
+          <th>Status</th>
+          <th>Prioritet</th>
+          <th>Tildelt</th>
+          <th>Poeng</th>
+        </tr>
+      </thead>
+      <tbody id="list-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- CREATE / EDIT MODAL -->
+<div class="overlay" id="create-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="create-modal-title">Opprett sak</span>
+      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Tittel *</label>
+        <input class="form-input" id="f-title" type="text" placeholder="Hva må gjøres?" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Type</label>
+          <select class="form-select" id="f-type">
+            <option value="task">Oppgave</option>
+            <option value="story">Story</option>
+            <option value="bug">Bug</option>
+            <option value="epic">Episk</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="f-status">
+            <option value="todo">Gjøremål</option>
+            <option value="inprogress">Pågår</option>
+            <option value="review">Gjennomgang</option>
+            <option value="done">Ferdig</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Prioritet</label>
+          <select class="form-select" id="f-priority">
+            <option value="medium">Medium</option>
+            <option value="low">Lav</option>
+            <option value="high">Høy</option>
+            <option value="critical">Kritisk</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tildelt</label>
+          <input class="form-input" id="f-assignee" type="text" placeholder="Navn" />
+        </div>
+        <div class="form-group" style="max-width:90px">
+          <label class="form-label">Poeng</label>
+          <input class="form-input" id="f-points" type="number" min="0" max="99" placeholder="0" />
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Beskrivelse</label>
+        <textarea class="form-textarea" id="f-desc" placeholder="Mer detaljer…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger" id="delete-btn" style="display:none" onclick="deleteIssue()">Slett</button>
+      <button class="btn btn-secondary" onclick="closeCreateModal()">Avbryt</button>
+      <button class="btn btn-primary" onclick="saveIssue()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPRINT MODAL -->
+<div class="overlay" id="sprint-overlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title">Oppdater sprint</span>
+      <button class="modal-close" onclick="closeSprintModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Sprint-navn</label>
+        <input class="form-input" id="sp-name" type="text" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Startdato</label>
+          <input class="form-input" id="sp-start" type="date" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sluttdato</label>
+          <input class="form-input" id="sp-end" type="date" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeSprintModal()">Avbryt</button>
+      <button class="btn btn-primary" onclick="saveSprint()">Lagre</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── STATE ──────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'kystloftet_issues';
+const SPRINT_KEY  = 'kystloftet_sprint';
+
+let issues = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+let sprint = JSON.parse(localStorage.getItem(SPRINT_KEY) || 'null') || {
+  name: 'Sprint 3',
+  start: '2026-03-01',
+  end: '2026-03-14'
+};
+let nextId = issues.reduce((m, i) => Math.max(m, i._num || 0), 0) + 1;
+let editingId = null;
+let dragId = null;
+let currentView = 'board';
+
+// Seed data if empty
+if (issues.length === 0) {
+  const seed = [
+    { title: 'Legg til interaktivt kart over kystprosjekter', type: 'story',  status: 'todo',      priority: 'high',     assignee: 'Kari N',   points: 8,  desc: 'Brukere skal kunne se og filtrere prosjekter på et interaktivt kart.', comments: [] },
+    { title: 'Fiks mobilvisning på partnerseksjonen',        type: 'bug',    status: 'inprogress', priority: 'critical', assignee: 'Ole H',    points: 3,  desc: 'Logosene overlapper på skjermer under 480px.', comments: [] },
+    { title: 'Skriv innhold til "Om oss"-siden',             type: 'task',   status: 'todo',       priority: 'medium',   assignee: 'Marte S',  points: 2,  desc: '', comments: [] },
+    { title: 'Lag nyhetsbrev-påmeldingsskjema',              type: 'story',  status: 'review',     priority: 'medium',   assignee: 'Kari N',   points: 5,  desc: 'Integrere med e-postleverandør og GDPR-samtykkeboks.', comments: [] },
+    { title: 'Optimaliser bilder for raskere lastetid',      type: 'task',   status: 'done',       priority: 'low',      assignee: 'Ole H',    points: 2,  desc: '', comments: [] },
+    { title: 'Implementer mørk modus',                       type: 'epic',   status: 'todo',       priority: 'low',      assignee: '',         points: 13, desc: 'Full tema-støtte med CSS-variabler og system-preferanse.', comments: [] },
+    { title: 'Tilgjengeligheitsrevisjon (WCAG 2.2)',          type: 'task',   status: 'inprogress', priority: 'high',     assignee: 'Marte S',  points: 5,  desc: '', comments: [] },
+    { title: 'Legg til søkefunksjon i prosjektoversikt',     type: 'story',  status: 'done',       priority: 'medium',   assignee: 'Kari N',   points: 5,  desc: '', comments: [] },
+  ];
+  seed.forEach(s => {
+    s.id = 'KYS-' + String(nextId).padStart(3, '0');
+    s._num = nextId++;
+    s.created = new Date().toISOString();
+    if (!s.comments) s.comments = [];
+    issues.push(s);
+  });
+  save();
+}
+
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(issues));
+  localStorage.setItem(SPRINT_KEY, JSON.stringify(sprint));
+}
+
+// ─── FILTERS & HELPERS ──────────────────────────────────────────────────────
+function getFiltered() {
+  const q  = document.getElementById('search-input').value.toLowerCase();
+  const ft = document.getElementById('filter-type').value;
+  const fp = document.getElementById('filter-priority').value;
+  const fa = document.getElementById('filter-assignee').value;
+  return issues.filter(i => {
+    if (q  && !i.title.toLowerCase().includes(q) && !i.id.toLowerCase().includes(q)) return false;
+    if (ft && i.type     !== ft) return false;
+    if (fp && i.priority !== fp) return false;
+    if (fa && i.assignee !== fa) return false;
+    return true;
+  });
+}
+
+const TYPE_LABELS    = { story:'Story', bug:'Bug', task:'Oppgave', epic:'Episk' };
+const PRIO_LABELS    = { critical:'Kritisk', high:'Høy', medium:'Medium', low:'Lav' };
+const STATUS_LABELS  = { todo:'Gjøremål', inprogress:'Pågår', review:'Gjennomgang', done:'Ferdig' };
+
+function typeClass(t)  { return 'type-' + t; }
+function prioClass(p)  { return 'prio-' + p; }
+function statusClass(s){ return 'status-' + s; }
+function initials(name){ return name ? name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) : '?'; }
+function avatarColor(name) {
+  const colors = ['#0d2b45','#2e9bc5','#7950f2','#2ecc71','#e65100','#c62828'];
+  let h = 0; for (let c of (name||'')) h = (h * 31 + c.charCodeAt(0)) & 0xFFFF;
+  return colors[h % colors.length];
+}
+
+// ─── RENDER ──────────────────────────────────────────────────────────────────
+function renderAll() {
+  updateAssigneeFilter();
+  updateSprintBar();
+  if (currentView === 'board') renderBoard();
+  else renderList();
+}
+
+function updateAssigneeFilter() {
+  const sel = document.getElementById('filter-assignee');
+  const cur = sel.value;
+  const names = [...new Set(issues.map(i=>i.assignee).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Alle tildelt</option>' +
+    names.map(n => `<option value="${n}"${n===cur?' selected':''}>${n}</option>`).join('');
+}
+
+function updateSprintBar() {
+  document.getElementById('sprint-name-label').textContent = sprint.name;
+  const fmt = d => { if (!d) return ''; const [y,m,day] = d.split('-'); return `${+day}. ${['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'][+m-1]} ${y}`; };
+  document.getElementById('sprint-dates-label').textContent = fmt(sprint.start) + ' — ' + fmt(sprint.end);
+  const total = issues.length;
+  const done  = issues.filter(i=>i.status==='done').length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-label').textContent = `${done} av ${total} saker fullført`;
+}
+
+function cardHTML(issue) {
+  const av = issue.assignee
+    ? `<div class="assignee-avatar" style="background:${avatarColor(issue.assignee)}" title="${issue.assignee}">${initials(issue.assignee)}</div>`
+    : '';
+  const pts = issue.points ? `<span class="story-pts">${issue.points}p</span>` : '';
+  return `
+    <div class="issue-card" draggable="true" data-id="${issue.id}"
+         ondragstart="onDragStart(event,'${issue.id}')"
+         ondragend="onDragEnd(event)"
+         onclick="openDetail('${issue.id}')">
+      <div class="card-type-row">
+        <span class="type-badge ${typeClass(issue.type)}">${TYPE_LABELS[issue.type]||issue.type}</span>
+        <span class="issue-id">${issue.id}</span>
+      </div>
+      <div class="card-title">${escHtml(issue.title)}</div>
+      <div class="card-footer">
+        <span class="priority-icon ${prioClass(issue.priority)}">${PRIO_LABELS[issue.priority]||issue.priority}</span>
+        ${pts}
+        ${av}
+      </div>
+    </div>`;
+}
+
+function renderBoard() {
+  const filtered = getFiltered();
+  const cols = ['todo','inprogress','review','done'];
+  cols.forEach(col => {
+    const items = filtered.filter(i=>i.status===col);
+    document.getElementById('count-'+col).textContent = items.length;
+    const el = document.getElementById('col-'+col);
+    el.innerHTML = items.length
+      ? items.map(cardHTML).join('')
+      : '<div class="empty-col">Ingen saker</div>';
+  });
+}
+
+function renderList() {
+  const filtered = getFiltered();
+  const tbody = document.getElementById('list-body');
+  tbody.innerHTML = filtered.map(i => `
+    <tr onclick="openDetail('${i.id}')">
+      <td style="color:var(--text-muted);font-weight:600">${i.id}</td>
+      <td><span class="type-badge ${typeClass(i.type)}">${TYPE_LABELS[i.type]||i.type}</span></td>
+      <td style="font-weight:500">${escHtml(i.title)}</td>
+      <td><span class="status-pill ${statusClass(i.status)}">${STATUS_LABELS[i.status]||i.status}</span></td>
+      <td><span class="priority-icon ${prioClass(i.priority)}">${PRIO_LABELS[i.priority]||i.priority}</span></td>
+      <td>${i.assignee ? `<div style="display:flex;align-items:center;gap:0.4rem"><div class="assignee-avatar" style="background:${avatarColor(i.assignee)};width:20px;height:20px;font-size:0.55rem">${initials(i.assignee)}</div>${escHtml(i.assignee)}</div>` : '—'}</td>
+      <td style="color:var(--text-muted)">${i.points||'—'}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--text-muted)">Ingen saker funnet</td></tr>';
+}
+
+// ─── VIEW TOGGLE ─────────────────────────────────────────────────────────────
+function setView(v) {
+  currentView = v;
+  document.getElementById('board-view').style.display = v==='board' ? 'flex' : 'none';
+  document.getElementById('list-view').style.display  = v==='list'  ? 'block': 'none';
+  document.getElementById('btn-board').classList.toggle('active', v==='board');
+  document.getElementById('btn-list').classList.toggle('active',  v==='list');
+  renderAll();
+}
+
+// ─── CREATE / EDIT MODAL ─────────────────────────────────────────────────────
+function openCreateModal(defaultStatus) {
+  editingId = null;
+  document.getElementById('create-modal-title').textContent = 'Opprett sak';
+  document.getElementById('delete-btn').style.display = 'none';
+  document.getElementById('f-title').value    = '';
+  document.getElementById('f-type').value     = 'task';
+  document.getElementById('f-status').value   = defaultStatus || 'todo';
+  document.getElementById('f-priority').value = 'medium';
+  document.getElementById('f-assignee').value = '';
+  document.getElementById('f-points').value   = '';
+  document.getElementById('f-desc').value     = '';
+  document.getElementById('create-overlay').classList.add('open');
+  document.getElementById('f-title').focus();
+}
+
+function openEditModal(id) {
+  const issue = issues.find(i=>i.id===id);
+  if (!issue) return;
+  editingId = id;
+  document.getElementById('create-modal-title').textContent = 'Rediger sak';
+  document.getElementById('delete-btn').style.display = 'inline-flex';
+  document.getElementById('f-title').value    = issue.title;
+  document.getElementById('f-type').value     = issue.type;
+  document.getElementById('f-status').value   = issue.status;
+  document.getElementById('f-priority').value = issue.priority;
+  document.getElementById('f-assignee').value = issue.assignee || '';
+  document.getElementById('f-points').value   = issue.points || '';
+  document.getElementById('f-desc').value     = issue.desc || '';
+  document.getElementById('create-overlay').classList.add('open');
+  document.getElementById('f-title').focus();
+}
+
+function closeCreateModal() {
+  document.getElementById('create-overlay').classList.remove('open');
+}
+
+function saveIssue() {
+  const title = document.getElementById('f-title').value.trim();
+  if (!title) { document.getElementById('f-title').focus(); showToast('Tittel er påkrevd'); return; }
+  if (editingId) {
+    const i = issues.find(x=>x.id===editingId);
+    if (i) {
+      i.title    = title;
+      i.type     = document.getElementById('f-type').value;
+      i.status   = document.getElementById('f-status').value;
+      i.priority = document.getElementById('f-priority').value;
+      i.assignee = document.getElementById('f-assignee').value.trim();
+      i.points   = parseInt(document.getElementById('f-points').value) || 0;
+      i.desc     = document.getElementById('f-desc').value.trim();
+    }
+    showToast('Sak oppdatert');
+  } else {
+    const id = 'KYS-' + String(nextId).padStart(3, '0');
+    issues.push({
+      id, _num: nextId++,
+      title,
+      type:     document.getElementById('f-type').value,
+      status:   document.getElementById('f-status').value,
+      priority: document.getElementById('f-priority').value,
+      assignee: document.getElementById('f-assignee').value.trim(),
+      points:   parseInt(document.getElementById('f-points').value) || 0,
+      desc:     document.getElementById('f-desc').value.trim(),
+      created:  new Date().toISOString(),
+      comments: []
+    });
+    showToast('Sak opprettet');
+  }
+  save();
+  closeCreateModal();
+  renderAll();
+}
+
+function deleteIssue() {
+  if (!editingId) return;
+  if (!confirm('Slett denne saken?')) return;
+  issues = issues.filter(i=>i.id!==editingId);
+  save();
+  closeCreateModal();
+  closeDetail();
+  renderAll();
+  showToast('Sak slettet');
+}
+
+// ─── DETAIL VIEW ─────────────────────────────────────────────────────────────
+let detailId = null;
+function openDetail(id) {
+  const i = issues.find(x=>x.id===id);
+  if (!i) return;
+  detailId = id;
+
+  const fmt = ds => {
+    const d = new Date(ds);
+    return d.toLocaleDateString('no-NO', {day:'numeric',month:'short',year:'numeric'});
+  };
+
+  // Re-use create overlay as detail
+  document.getElementById('create-modal-title').textContent = i.id + ' — ' + i.title;
+  document.getElementById('delete-btn').style.display = 'none';
+
+  // Build detail body
+  const overlay = document.getElementById('create-overlay');
+  const body = overlay.querySelector('.modal-body');
+  body.innerHTML = `
+    <div class="detail-meta">
+      <div class="meta-item"><span class="meta-key">Type</span><span class="type-badge ${typeClass(i.type)}" style="display:inline-block">${TYPE_LABELS[i.type]}</span></div>
+      <div class="meta-item"><span class="meta-key">Status</span><span class="status-pill ${statusClass(i.status)}">${STATUS_LABELS[i.status]}</span></div>
+      <div class="meta-item"><span class="meta-key">Prioritet</span><span class="priority-icon ${prioClass(i.priority)}">${PRIO_LABELS[i.priority]}</span></div>
+      <div class="meta-item"><span class="meta-key">Tildelt</span><span class="meta-val">${i.assignee||'—'}</span></div>
+      <div class="meta-item"><span class="meta-key">Poeng</span><span class="meta-val">${i.points||'—'}</span></div>
+      <div class="meta-item"><span class="meta-key">Opprettet</span><span class="meta-val">${fmt(i.created)}</span></div>
+    </div>
+    ${i.desc ? `<div class="detail-desc">${escHtml(i.desc)}</div>` : ''}
+    <div class="comments-section">
+      <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em">Kommentarer (${(i.comments||[]).length})</div>
+      <div id="comments-list">
+        ${(i.comments||[]).map(c=>`
+          <div class="comment">
+            <div class="comment-avatar" style="background:${avatarColor(c.author)}">${initials(c.author)}</div>
+            <div class="comment-body">
+              <span class="comment-author">${escHtml(c.author)}</span>
+              <span class="comment-time">${fmt(c.time)}</span>
+              <div class="comment-text">${escHtml(c.text)}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="comment-input-row">
+        <input class="form-input" id="new-comment-author" type="text" placeholder="Ditt navn" style="max-width:130px">
+        <textarea class="form-textarea" id="new-comment-text" placeholder="Skriv en kommentar…" style="min-height:50px;flex:1"></textarea>
+        <button class="btn btn-primary" style="align-self:flex-end" onclick="addComment('${id}')">Send</button>
+      </div>
+    </div>`;
+
+  const footer = overlay.querySelector('.modal-footer');
+  footer.innerHTML = `
+    <button class="btn btn-danger" onclick="deleteIssueFromDetail('${id}')">Slett</button>
+    <button class="btn btn-secondary" onclick="closeDetail()">Lukk</button>
+    <button class="btn btn-primary" onclick="openEditFromDetail('${id}')">Rediger</button>`;
+
+  overlay.classList.add('open');
+}
+
+function closeDetail() {
+  detailId = null;
+  document.getElementById('create-overlay').classList.remove('open');
+  // Restore normal footer
+  const footer = document.getElementById('create-overlay').querySelector('.modal-footer');
+  footer.innerHTML = `
+    <button class="btn btn-danger" id="delete-btn" style="display:none" onclick="deleteIssue()">Slett</button>
+    <button class="btn btn-secondary" onclick="closeCreateModal()">Avbryt</button>
+    <button class="btn btn-primary" onclick="saveIssue()">Lagre</button>`;
+  // Restore normal body
+  const body = document.getElementById('create-overlay').querySelector('.modal-body');
+  body.innerHTML = `
+    <div class="form-group"><label class="form-label">Tittel *</label><input class="form-input" id="f-title" type="text" placeholder="Hva må gjøres?" /></div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="f-type"><option value="task">Oppgave</option><option value="story">Story</option><option value="bug">Bug</option><option value="epic">Episk</option></select></div>
+      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="f-status"><option value="todo">Gjøremål</option><option value="inprogress">Pågår</option><option value="review">Gjennomgang</option><option value="done">Ferdig</option></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label class="form-label">Prioritet</label><select class="form-select" id="f-priority"><option value="medium">Medium</option><option value="low">Lav</option><option value="high">Høy</option><option value="critical">Kritisk</option></select></div>
+      <div class="form-group"><label class="form-label">Tildelt</label><input class="form-input" id="f-assignee" type="text" placeholder="Navn" /></div>
+      <div class="form-group" style="max-width:90px"><label class="form-label">Poeng</label><input class="form-input" id="f-points" type="number" min="0" max="99" placeholder="0" /></div>
+    </div>
+    <div class="form-group"><label class="form-label">Beskrivelse</label><textarea class="form-textarea" id="f-desc" placeholder="Mer detaljer…"></textarea></div>`;
+}
+
+function deleteIssueFromDetail(id) {
+  if (!confirm('Slett denne saken?')) return;
+  issues = issues.filter(i=>i.id!==id);
+  save();
+  closeDetail();
+  renderAll();
+  showToast('Sak slettet');
+}
+
+function openEditFromDetail(id) {
+  closeDetail();
+  openEditModal(id);
+}
+
+function addComment(id) {
+  const i = issues.find(x=>x.id===id);
+  const author = document.getElementById('new-comment-author').value.trim() || 'Anonym';
+  const text   = document.getElementById('new-comment-text').value.trim();
+  if (!text) return;
+  if (!i.comments) i.comments = [];
+  i.comments.push({ author, text, time: new Date().toISOString() });
+  save();
+  openDetail(id); // re-render
+}
+
+// ─── SPRINT MODAL ─────────────────────────────────────────────────────────────
+function openSprintModal() {
+  document.getElementById('sp-name').value  = sprint.name;
+  document.getElementById('sp-start').value = sprint.start;
+  document.getElementById('sp-end').value   = sprint.end;
+  document.getElementById('sprint-overlay').classList.add('open');
+}
+function closeSprintModal() { document.getElementById('sprint-overlay').classList.remove('open'); }
+function saveSprint() {
+  sprint.name  = document.getElementById('sp-name').value.trim() || sprint.name;
+  sprint.start = document.getElementById('sp-start').value;
+  sprint.end   = document.getElementById('sp-end').value;
+  save();
+  closeSprintModal();
+  updateSprintBar();
+  showToast('Sprint oppdatert');
+}
+
+// ─── DRAG & DROP ─────────────────────────────────────────────────────────────
+function onDragStart(e, id) {
+  dragId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragEnd(e) { e.currentTarget.classList.remove('dragging'); dragId = null; }
+function onDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function onDrop(e, col) {
+  e.preventDefault();
+  if (!dragId) return;
+  const i = issues.find(x=>x.id===dragId);
+  if (i && i.status !== col) { i.status = col; save(); renderAll(); showToast('Sak oppdatert'); }
+}
+
+// ─── KEYBOARD ────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeDetail(); closeCreateModal(); closeSprintModal(); }
+  if ((e.ctrlKey||e.metaKey) && e.key==='k') { e.preventDefault(); openCreateModal(); }
+});
+
+// ─── OVERLAY CLOSE ON BG CLICK ───────────────────────────────────────────────
+document.getElementById('create-overlay').addEventListener('click', e => { if (e.target===e.currentTarget) { if (detailId) closeDetail(); else closeCreateModal(); } });
+document.getElementById('sprint-overlay').addEventListener('click', e => { if (e.target===e.currentTarget) closeSprintModal(); });
+
+// ─── UTILITY ─────────────────────────────────────────────────────────────────
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+renderAll();
+</script>
+</body>
+</html>
